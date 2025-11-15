@@ -86,7 +86,7 @@
         .lap { color: #2ecc71; }
         .position { color: #f39c12; }
         
-        /* МОБИЛЬНОЕ УПРАВЛЕНИЕ - МАЛЕНЬКИЕ КНОПКИ */
+        /* МОБИЛЬНОЕ УПРАВЛЕНИЕ - КНОПКИ СЛЕВА */
         #mobileControls {
             position: absolute;
             bottom: 20px;
@@ -267,8 +267,15 @@
             <span id="carNitro">💨 100%</span>
         </div>
         
-        <!-- МОБИЛЬНОЕ УПРАВЛЕНИЕ - МАЛЕНЬКИЕ СТРЕЛКИ -->
+        <!-- МОБИЛЬНОЕ УПРАВЛЕНИЕ - КНОПКИ СЛЕВА -->
         <div id="mobileControls">
+            <!-- ЛЕВАЯ ЧАСТЬ - УСКОРЕНИЕ И ТОРМОЗ -->
+            <div class="control-section">
+                <div class="action-btn" id="nitroBtn">💨</div>
+                <div class="action-btn" id="brakeBtn">🛑</div>
+            </div>
+            
+            <!-- ПРАВАЯ ЧАСТЬ - СТРЕЛКИ -->
             <div class="control-section">
                 <div class="arrow-row">
                     <div class="arrow-btn" id="forwardBtn">↑</div>
@@ -282,11 +289,6 @@
                     <div class="arrow-btn" id="backwardBtn">↓</div>
                 </div>
             </div>
-            
-            <div class="control-section">
-                <div class="action-btn" id="nitroBtn">💨</div>
-                <div class="action-btn" id="brakeBtn">🛑</div>
-            </div>
         </div>
     </div>
 
@@ -296,7 +298,7 @@
         const cars = {
             bmw: { 
                 name: "BMW X5", 
-                maxSpeed: 250, // УВЕЛИЧИЛИ ДО 250!
+                maxSpeed: 250,
                 acceleration: 0.06,
                 handling: 0.03,
                 color: 0x0066cc,
@@ -304,7 +306,7 @@
             },
             mercedes: { 
                 name: "Mercedes G-Class", 
-                maxSpeed: 250, // УВЕЛИЧИЛИ ДО 250!
+                maxSpeed: 250,
                 acceleration: 0.05,
                 handling: 0.025,
                 color: 0x000000,
@@ -312,7 +314,7 @@
             },
             audi: { 
                 name: "Audi R8", 
-                maxSpeed: 250, // УВЕЛИЧИЛИ ДО 250!
+                maxSpeed: 250,
                 acceleration: 0.08,
                 handling: 0.035,
                 color: 0xff0000,
@@ -680,7 +682,7 @@
 
         // УПРАВЛЕНИЕ СТРЕЛКАМИ
         function setupMobileControls() {
-            // СТРЕЛКИ ДВИЖЕНИЯ
+            // СТРЕЛКИ ДВИЖЕНИЯ (ПРАВАЯ ЧАСТЬ)
             document.getElementById('forwardBtn').addEventListener('touchstart', (e) => {
                 e.preventDefault(); controls.forward = true;
             });
@@ -709,7 +711,7 @@
                 controls.right = false;
             });
             
-            // КНОПКИ ДЕЙСТВИЙ
+            // КНОПКИ ДЕЙСТВИЙ (ЛЕВАЯ ЧАСТЬ)
             document.getElementById('nitroBtn').addEventListener('touchstart', (e) => {
                 e.preventDefault(); 
                 if (nitro > 0) controls.nitro = true;
@@ -870,17 +872,4 @@
         }
 
         // ЗАПУСК
-        window.addEventListener('load', initGame);
-        
-        window.addEventListener('resize', () => {
-            if (camera && renderer) {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            }
-        });
-
-        console.log("🏎️ 3D Гоночная игра с ГИГАНТСКОЙ картой готова!");
-    </script>
-</body>
-</html>
+        window.addEventListener('load
