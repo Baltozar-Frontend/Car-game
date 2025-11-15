@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>3D Racing Game - Гигантская Карта!</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: linear-gradient(45deg, #1a1a2e, #16213e);
+            color: white;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            touch-action: none;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* ЭКРАН ВЫБОРА МАШИНЫ */
+        #carSelect {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .car-btn {
+            background: linear-gradient(45deg, #2c3e50, #34495e);
+            border: 3px solid #e74c3c;
+            color: white;
+            padding: 20px;
+            margin: 10px;
+            border-radius: 15px;
+            cursor: pointer;
+            width: 300px;
+            font-size: 18px;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .car-btn:hover {
+            transform: scale(1.05);
+            border-color: #f39c12;
+            background: linear-gradient(45deg, #e74c3c, #f39c12);
+        }
+        
+        /* ИГРОВОЙ ИНТЕРФЕЙС */
+        #gameUI {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid #e74c3c;
+            z-index: 100;
+            display: none;
+        }
+        
+        .stats {
+            margin: 8px 0;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .speed { color: #3498db; }
+        .lap { color: #2ecc71; }
+        .position { color: #f39c12; }
+        
+        /* МОБИЛЬНОЕ УПРАВЛЕНИЕ - МАЛЕНЬКИЕ КНОПКИ */
+        #mobileControls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: none;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 100;
+            align-items: center;
+        }
+        
+        .control-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .arrow-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(52, 152, 219, 0.3);
+            border: 2px solid #3498db;
+            border-radius: 15px;
+            color: white;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .arrow-btn:active {
+            background: rgba(52, 152, 219, 0.6);
+            transform: scale(0.95);
+        }
+        
+        .arrow-row {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .action-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            color: white;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 2px solid;
+            transition: all 0.2s;
+        }
+        
+        .action-btn:active {
+            transform: scale(0.95);
+        }
+        
+        #nitroBtn {
+            background: rgba(155, 89, 182, 0.3);
+            border-color: #9b59b6;
+        }
+        
+        #brakeBtn {
+            background: rgba(231, 76, 60, 0.3);
+            border-color: #e74c3c;
+        }
+        
+        #cameraRotateArea {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 70%;
+            z-index: 50;
+            display: none;
+        }
+        
+        #carHUD {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: 2px solid #e74c3c;
+            display: none;
+            font-size: 16px;
+        }
+
+        .title {
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #e74c3c, #f39c12);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+            text-shadow: 0 0 20px rgba(231, 76, 60, 0.5);
+        }
+
+        .subtitle {
+            font-size: 1.3em;
+            color: #bdc3c7;
+            margin-bottom: 30px;
+        }
+
+        /* МИНИ-КАРТА */
+        #miniMap {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 120px;
+            height: 120px;
+            background: rgba(0,0,0,0.7);
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            display: none;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- ОБЛАСТЬ ПОВОРОТА КАМЕРЫ -->
+        <div id="cameraRotateArea"></div>
+        
+        <!-- ВЫБОР МАШИНЫ -->
+        <div id="carSelect">
+            <h1 class="title">🚗 3D RACING GIANT MAP 🏁</h1>
+            <h2 class="subtitle">Выбери свою тачку:</h2>
+            
+            <button class="car-btn" onclick="selectCar('bmw')">
+                🚙 BMW X5<br>
+                <small>Скорость: 250 км/ч | Управление: Отличное</small>
+            </button>
+            
+            <button class="car-btn" onclick="selectCar('mercedes')">
+                🚗 Mercedes G-Class<br>
+                <small>Скорость: 250 км/ч | Проходимость: Высокая</small>
+            </button>
+            
+            <button class="car-btn" onclick="selectCar('audi')">
+                🏎️ Audi R8<br>
+                <small>Скорость: 250 км/ч | Ускорение: Максимальное</small>
+            </button>
+            
+            <button style="
+                background: linear-gradient(45deg, #e74c3c, #f39c12);
+                color: white;
+                border: none;
+                padding: 20px 40px;
+                border-radius: 15px;
+                font-size: 20px;
+                margin-top: 30px;
+                cursor: pointer;
+                border: 2px solid #fff;
+                font-weight: bold;
+            " onclick="startGame()">🏁 НАЧАТЬ ГОНКУ!</button>
+        </div>
+        
+        <!-- ИГРОВОЙ ИНТЕРФЕЙС -->
+        <div id="gameUI">
+            <div class="stats">🚀 <span id="speed" class="speed">0</span> км/ч</div>
+            <div class="stats">🏁 <span id="lap" class="lap">1</span>/3 круг</div>
+            <div class="stats">📊 <span id="position" class="position">1-е место</span></div>
+        </div>
+
+        <!-- МИНИ-КАРТА -->
+        <div id="miniMap"></div>
+        
+        <div id="carHUD">
+            <span id="carName">BMW X5</span> | 
+            <span id="carNitro">💨 100%</span>
+        </div>
+        
+        <!-- МОБИЛЬНОЕ УПРАВЛЕНИЕ - МАЛЕНЬКИЕ СТРЕЛКИ -->
+        <div id="mobileControls">
+            <div class="control-section">
+                <div class="arrow-row">
+                    <div class="arrow-btn" id="forwardBtn">↑</div>
+                </div>
+                <div class="arrow-row">
+                    <div class="arrow-btn" id="leftBtn">←</div>
+                    <div style="width: 60px; height: 60px;"></div>
+                    <div class="arrow-btn" id="rightBtn">→</div>
+                </div>
+                <div class="arrow-row">
+                    <div class="arrow-btn" id="backwardBtn">↓</div>
+                </div>
+            </div>
+            
+            <div class="control-section">
+                <div class="action-btn" id="nitroBtn">💨</div>
+                <div class="action-btn" id="brakeBtn">🛑</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // КОНФИГУРАЦИЯ МАШИН
+        const cars = {
+            bmw: { 
+                name: "BMW X5", 
+                maxSpeed: 250, // УВЕЛИЧИЛИ ДО 250!
+                acceleration: 0.06,
+                handling: 0.03,
+                color: 0x0066cc,
+                scale: 1.2
+            },
+            mercedes: { 
+                name: "Mercedes G-Class", 
+                maxSpeed: 250, // УВЕЛИЧИЛИ ДО 250!
+                acceleration: 0.05,
+                handling: 0.025,
+                color: 0x000000,
+                scale: 1.3
+            },
+            audi: { 
+                name: "Audi R8", 
+                maxSpeed: 250, // УВЕЛИЧИЛИ ДО 250!
+                acceleration: 0.08,
+                handling: 0.035,
+                color: 0xff0000,
+                scale: 1.0
+            }
+        };
+
+        // ПЕРЕМЕННЫЕ ИГРЫ
+        let scene, camera, renderer;
+        let carModel, track, opponents = [];
+        let currentCar = 'bmw';
+        let gameActive = false;
+        let carSpeed = 0;
+        let currentLap = 1;
+        let totalLaps = 3;
+        let playerPosition = 1;
+        let nitro = 100;
+        
+        // УПРАВЛЕНИЕ СТРЕЛКАМИ
+        let controls = { 
+            forward: false, 
+            backward: false, 
+            left: false, 
+            right: false,
+            nitro: false, 
+            brake: false 
+        };
+
+        // ПОВОРОТ КАМЕРЫ
+        let cameraRotation = {
+            active: false,
+            startX: 0,
+            startY: 0,
+            currentX: 0,
+            currentY: 0,
+            sensitivity: 0.01
+        };
+
+        // РАЗМЕРЫ КАРТЫ (ГИГАНТСКИЕ - 10000x10000!)
+        const MAP_SIZE = 10000;
+        const TRACK_WIDTH = 200;
+
+        // ИНИЦИАЛИЗАЦИЯ THREE.JS
+        function initGame() {
+            console.log("🚗 Инициализация 3D гоночной игры с ГИГАНТСКОЙ картой...");
+            
+            // СОЗДАЕМ СЦЕНУ
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.Fog(0x87CEEB, 1000, 5000);
+            
+            // КАМЕРА - вид от третьего лица
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+            camera.position.set(0, 20, 30);
+            
+            // РЕНДЕРЕР
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: document.getElementById('gameCanvas'), 
+                antialias: true 
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            // ОСВЕЩЕНИЕ
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            directionalLight.position.set(5000, 10000, 5000);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+            
+            // СОЗДАЕМ ГИГАНТСКУЮ ТРАССУ И ОКРУЖЕНИЕ
+            createGiantTrack();
+            createGiantEnvironment();
+            
+            console.log("✅ 3D гоночная игра с ГИГАНТСКОЙ картой готова!");
+        }
+
+        function createGiantTrack() {
+            // ГИГАНТСКОЕ ПОЛОТНО ТРАССЫ
+            const trackGeometry = new THREE.PlaneGeometry(MAP_SIZE, MAP_SIZE);
+            const trackMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x228B22,
+                roughness: 0.9
+            });
+            track = new THREE.Mesh(trackGeometry, trackMaterial);
+            track.rotation.x = -Math.PI / 2;
+            track.receiveShadow = true;
+            scene.add(track);
+
+            // АСФАЛЬТОВАЯ ДОРОГА
+            const roadGeometry = new THREE.PlaneGeometry(TRACK_WIDTH, MAP_SIZE);
+            const roadMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x333333,
+                roughness: 0.7
+            });
+            const road = new THREE.Mesh(roadGeometry, roadMaterial);
+            road.rotation.x = -Math.PI / 2;
+            road.position.y = 0.01;
+            road.receiveShadow = true;
+            scene.add(road);
+
+            // РАЗМЕТКА ДОРОГИ
+            const lineGeometry = new THREE.PlaneGeometry(3, 30);
+            const lineMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+            
+            // Центральная прерывистая линия
+            for (let z = -MAP_SIZE/2; z <= MAP_SIZE/2; z += 60) {
+                const line = new THREE.Mesh(lineGeometry, lineMaterial);
+                line.rotation.x = -Math.PI / 2;
+                line.position.set(0, 0.02, z);
+                scene.add(line);
+            }
+
+            // БОРДЮРЫ
+            const curbGeometry = new THREE.BoxGeometry(TRACK_WIDTH + 20, 2, 8);
+            const curbMaterial = new THREE.MeshLambertMaterial({ color: 0x666666 });
+            
+            const leftCurb = new THREE.Mesh(curbGeometry, curbMaterial);
+            leftCurb.position.set(-TRACK_WIDTH/2 - 4, 1, 0);
+            scene.add(leftCurb);
+            
+            const rightCurb = new THREE.Mesh(curbGeometry, curbMaterial);
+            rightCurb.position.set(TRACK_WIDTH/2 + 4, 1, 0);
+            scene.add(rightCurb);
+
+            // ДОРОЖНАЯ РАЗМЕТКА ПО БОКАМ
+            const sideLineGeometry = new THREE.PlaneGeometry(1, MAP_SIZE);
+            const sideLineMaterial = new THREE.MeshLambertMaterial({ color: 0xffff00 });
+            
+            const leftLine = new THREE.Mesh(sideLineGeometry, sideLineMaterial);
+            leftLine.rotation.x = -Math.PI / 2;
+            leftLine.position.set(-TRACK_WIDTH/2 + 5, 0.03, 0);
+            scene.add(leftLine);
+            
+            const rightLine = new THREE.Mesh(sideLineGeometry, sideLineMaterial);
+            rightLine.rotation.x = -Math.PI / 2;
+            rightLine.position.set(TRACK_WIDTH/2 - 5, 0.03, 0);
+            scene.add(rightLine);
+        }
+
+        function createGiantEnvironment() {
+            // ОГРОМНЫЕ ГОРЫ
+            const mountainGeometry = new THREE.ConeGeometry(500, 800, 16);
+            const mountainMaterial = new THREE.MeshLambertMaterial({ color: 0x795548 });
+            
+            // Создаем горный хребет по периметру карты
+            const mountainPositions = [
+                { x: -4000, z: -4000 }, { x: -2000, z: -4500 }, { x: 0, z: -4800 },
+                { x: 2000, z: -4500 }, { x: 4000, z: -4000 }, { x: 4500, z: -2000 },
+                { x: 4800, z: 0 }, { x: 4500, z: 2000 }, { x: 4000, z: 4000 },
+                { x: 2000, z: 4500 }, { x: 0, z: 4800 }, { x: -2000, z: 4500 },
+                { x: -4000, z: 4000 }, { x: -4500, z: 2000 }, { x: -4800, z: 0 },
+                { x: -4500, z: -2000 }
+            ];
+            
+            mountainPositions.forEach(pos => {
+                const mountain = new THREE.Mesh(mountainGeometry, mountainMaterial);
+                mountain.position.set(pos.x, 400, pos.z);
+                mountain.rotation.y = Math.random() * Math.PI;
+                scene.add(mountain);
+            });
+
+            // ОГРОМНЫЙ ЛЕС
+            const treeTrunkGeometry = new THREE.CylinderGeometry(3, 4, 20, 8);
+            const treeTrunkMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+            const treeLeavesGeometry = new THREE.SphereGeometry(12);
+            const treeLeavesMaterial = new THREE.MeshLambertMaterial({ color: 0x228B22 });
+            
+            // Создаем ОЧЕНЬ много деревьев
+            for (let i = 0; i < 300; i++) {
+                const treeTrunk = new THREE.Mesh(treeTrunkGeometry, treeTrunkMaterial);
+                const treeLeaves = new THREE.Mesh(treeLeavesGeometry, treeLeavesMaterial);
+                
+                const side = Math.random() > 0.5 ? 1 : -1;
+                const x = side * (TRACK_WIDTH/2 + 100 + Math.random() * 1000);
+                const z = (Math.random() - 0.5) * MAP_SIZE;
+                
+                treeTrunk.position.set(x, 10, z);
+                treeLeaves.position.set(x, 25, z);
+                
+                treeTrunk.castShadow = true;
+                treeLeaves.castShadow = true;
+                
+                scene.add(treeTrunk);
+                scene.add(treeLeaves);
+            }
+
+            // БОЛЬШИЕ ЗДАНИЯ
+            const buildingGeometry = new THREE.BoxGeometry(80, 150, 80);
+            const buildingMaterial = new THREE.MeshLambertMaterial({ color: 0x95a5a6 });
+            
+            for (let i = 0; i < 50; i++) {
+                const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
+                const side = Math.random() > 0.5 ? 1 : -1;
+                const x = side * (TRACK_WIDTH/2 + 300 + Math.random() * 1500);
+                const z = (Math.random() - 0.5) * MAP_SIZE;
+                
+                building.position.set(x, 75, z);
+                building.castShadow = true;
+                scene.add(building);
+            }
+
+            // ОСВЕЩЕНИЕ И СТОЛБЫ ВДОЛЬ ТРАССЫ
+            const lampPostGeometry = new THREE.CylinderGeometry(2, 2, 40, 8);
+            const lampPostMaterial = new THREE.MeshLambertMaterial({ color: 0x34495e });
+            const lampGeometry = new THREE.SphereGeometry(5);
+            const lampMaterial = new THREE.MeshLambertMaterial({ color: 0xf1c40f });
+            
+            for (let z = -MAP_SIZE/2; z <= MAP_SIZE/2; z += 200) {
+                const lampPost = new THREE.Mesh(lampPostGeometry, lampPostMaterial);
+                const lamp = new THREE.Mesh(lampGeometry, lampMaterial);
+                
+                lampPost.position.set(TRACK_WIDTH/2 + 15, 20, z);
+                lamp.position.set(TRACK_WIDTH/2 + 15, 40, z);
+                
+                scene.add(lampPost);
+                scene.add(lamp);
+                
+                // Столбы с другой стороны
+                const lampPost2 = new THREE.Mesh(lampPostGeometry, lampPostMaterial);
+                const lamp2 = new THREE.Mesh(lampGeometry, lampMaterial);
+                
+                lampPost2.position.set(-TRACK_WIDTH/2 - 15, 20, z);
+                lamp2.position.set(-TRACK_WIDTH/2 - 15, 40, z);
+                
+                scene.add(lampPost2);
+                scene.add(lamp2);
+            }
+
+            // ОЗЕРА И ВОДОЕМЫ
+            const lakeGeometry = new THREE.PlaneGeometry(500, 300);
+            const lakeMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x2980b9,
+                transparent: true,
+                opacity: 0.7
+            });
+            
+            for (let i = 0; i < 10; i++) {
+                const lake = new THREE.Mesh(lakeGeometry, lakeMaterial);
+                const side = Math.random() > 0.5 ? 1 : -1;
+                const x = side * (TRACK_WIDTH/2 + 600 + Math.random() * 2000);
+                const z = (Math.random() - 0.5) * MAP_SIZE;
+                
+                lake.rotation.x = -Math.PI / 2;
+                lake.position.set(x, 0.05, z);
+                scene.add(lake);
+            }
+        }
+
+        // СОЗДАНИЕ 3D МОДЕЛИ МАШИНЫ
+        function createCarModel(carType) {
+            console.log(`🚗 Создание модели машины: ${carType}`);
+            
+            if (carModel) scene.remove(carModel);
+            
+            const carConfig = cars[carType];
+            const carGroup = new THREE.Group();
+            
+            // КУЗОВ
+            const bodyGeometry = new THREE.BoxGeometry(3, 1, 6);
+            const bodyMaterial = new THREE.MeshLambertMaterial({ 
+                color: carConfig.color,
+                roughness: 0.3,
+                metalness: 0.7
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.castShadow = true;
+            carGroup.add(body);
+
+            // КАБИНА
+            const cabinGeometry = new THREE.BoxGeometry(2.5, 1, 2);
+            const cabinMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x222222,
+                transparent: true,
+                opacity: 0.8
+            });
+            const cabin = new THREE.Mesh(cabinGeometry, cabinMaterial);
+            cabin.position.set(0, 1.2, -0.5);
+            cabin.castShadow = true;
+            carGroup.add(cabin);
+
+            // КОЛЕСА
+            const wheelGeometry = new THREE.CylinderGeometry(0.6, 0.6, 0.4, 16);
+            const wheelMaterial = new THREE.MeshLambertMaterial({ color: 0x111111 });
+            
+            const wheelPositions = [
+                { x: -1.5, y: -0.5, z: 1.8 }, { x: 1.5, y: -0.5, z: 1.8 },
+                { x: -1.5, y: -0.5, z: -1.8 }, { x: 1.5, y: -0.5, z: -1.8 }
+            ];
+            
+            wheelPositions.forEach(pos => {
+                const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+                wheel.position.set(pos.x, pos.y, pos.z);
+                wheel.rotation.z = Math.PI / 2;
+                wheel.castShadow = true;
+                carGroup.add(wheel);
+            });
+
+            carModel = carGroup;
+            carModel.scale.set(carConfig.scale, carConfig.scale, carConfig.scale);
+            scene.add(carModel);
+
+            console.log("✅ Машина создана!");
+        }
+
+        function createOpponents() {
+            const opponentColors = [0xff4444, 0x44ff44, 0x4444ff, 0xffff44];
+            
+            for (let i = 0; i < 4; i++) {
+                const opponentGroup = new THREE.Group();
+                
+                const bodyGeometry = new THREE.BoxGeometry(3, 1, 6);
+                const bodyMaterial = new THREE.MeshLambertMaterial({ 
+                    color: opponentColors[i],
+                    roughness: 0.3
+                });
+                const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+                opponentGroup.add(body);
+
+                opponentGroup.position.set(
+                    (Math.random() - 0.5) * 30,
+                    1.5,
+                    -80 - i * 50
+                );
+                
+                opponents.push({
+                    model: opponentGroup,
+                    speed: 60 + Math.random() * 40,
+                    lap: 1
+                });
+                
+                scene.add(opponentGroup);
+            }
+        }
+
+        function selectCar(car) {
+            currentCar = car;
+            console.log(`🚗 Выбрана: ${cars[car].name}`);
+        }
+
+        function startGame() {
+            console.log("🏁 Запуск гонки на ГИГАНТСКОЙ карте...");
+            
+            document.getElementById('carSelect').style.display = 'none';
+            document.getElementById('gameUI').style.display = 'block';
+            document.getElementById('carHUD').style.display = 'block';
+            document.getElementById('mobileControls').style.display = 'flex';
+            document.getElementById('miniMap').style.display = 'block';
+            document.getElementById('cameraRotateArea').style.display = 'block';
+            
+            createCarModel(currentCar);
+            createOpponents();
+            setupMobileControls();
+            setupCameraRotation();
+            
+            gameActive = true;
+            updateUI();
+            animate();
+        }
+
+        // УПРАВЛЕНИЕ СТРЕЛКАМИ
+        function setupMobileControls() {
+            // СТРЕЛКИ ДВИЖЕНИЯ
+            document.getElementById('forwardBtn').addEventListener('touchstart', (e) => {
+                e.preventDefault(); controls.forward = true;
+            });
+            document.getElementById('forwardBtn').addEventListener('touchend', () => {
+                controls.forward = false;
+            });
+            
+            document.getElementById('backwardBtn').addEventListener('touchstart', (e) => {
+                e.preventDefault(); controls.backward = true;
+            });
+            document.getElementById('backwardBtn').addEventListener('touchend', () => {
+                controls.backward = false;
+            });
+            
+            document.getElementById('leftBtn').addEventListener('touchstart', (e) => {
+                e.preventDefault(); controls.left = true;
+            });
+            document.getElementById('leftBtn').addEventListener('touchend', () => {
+                controls.left = false;
+            });
+            
+            document.getElementById('rightBtn').addEventListener('touchstart', (e) => {
+                e.preventDefault(); controls.right = true;
+            });
+            document.getElementById('rightBtn').addEventListener('touchend', () => {
+                controls.right = false;
+            });
+            
+            // КНОПКИ ДЕЙСТВИЙ
+            document.getElementById('nitroBtn').addEventListener('touchstart', (e) => {
+                e.preventDefault(); 
+                if (nitro > 0) controls.nitro = true;
+            });
+            document.getElementById('nitroBtn').addEventListener('touchend', () => {
+                controls.nitro = false;
+            });
+            
+            document.getElementById('brakeBtn').addEventListener('touchstart', (e) => {
+                e.preventDefault(); controls.brake = true;
+            });
+            document.getElementById('brakeBtn').addEventListener('touchend', () => {
+                controls.brake = false;
+            });
+        }
+
+        // ПОВОРОТ КАМЕРЫ ПАЛЬЦЕМ
+        function setupCameraRotation() {
+            const cameraArea = document.getElementById('cameraRotateArea');
+            
+            cameraArea.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (e.touches.length === 1) {
+                    cameraRotation.active = true;
+                    cameraRotation.startX = e.touches[0].clientX;
+                    cameraRotation.startY = e.touches[0].clientY;
+                }
+            });
+            
+            cameraArea.addEventListener('touchmove', (e) => {
+                if (!cameraRotation.active || e.touches.length !== 1) return;
+                e.preventDefault();
+                
+                cameraRotation.currentX = e.touches[0].clientX;
+                cameraRotation.currentY = e.touches[0].clientY;
+                
+                const deltaX = (cameraRotation.currentX - cameraRotation.startX) * cameraRotation.sensitivity;
+                const deltaY = (cameraRotation.currentY - cameraRotation.startY) * cameraRotation.sensitivity;
+                
+                // Поворот камеры вокруг машины
+                camera.rotation.y -= deltaX;
+                camera.rotation.x = THREE.MathUtils.clamp(camera.rotation.x - deltaY, -Math.PI/3, Math.PI/6);
+                
+                cameraRotation.startX = cameraRotation.currentX;
+                cameraRotation.startY = cameraRotation.currentY;
+            });
+            
+            cameraArea.addEventListener('touchend', () => {
+                cameraRotation.active = false;
+            });
+        }
+
+        // ОБНОВЛЕНИЕ ИГРЫ
+        function updateGame() {
+            if (!gameActive) return;
+            
+            const carConfig = cars[currentCar];
+            
+            // УПРАВЛЕНИЕ СКОРОСТЬЮ СТРЕЛКАМИ
+            if (controls.forward) {
+                carSpeed = Math.min(carConfig.maxSpeed, carSpeed + carConfig.acceleration * 2);
+            } else if (controls.backward) {
+                carSpeed = Math.max(-carConfig.maxSpeed * 0.5, carSpeed - carConfig.acceleration * 3);
+            } else {
+                // Плавное замедление
+                carSpeed *= 0.98;
+            }
+            
+            // ТОРМОЖЕНИЕ
+            if (controls.brake) {
+                carSpeed = Math.max(0, carSpeed - carConfig.acceleration * 4);
+            }
+            
+            // NITRO
+            if (controls.nitro && nitro > 0) {
+                carSpeed = Math.min(carConfig.maxSpeed * 1.3, carSpeed + carConfig.acceleration * 3);
+                nitro = Math.max(0, nitro - 0.8);
+            }
+            
+            // ПОВОРОТЫ СТРЕЛКАМИ
+            if (Math.abs(carSpeed) > 5) {
+                if (controls.left) {
+                    carModel.rotation.y += carConfig.handling * (carSpeed / carConfig.maxSpeed);
+                }
+                if (controls.right) {
+                    carModel.rotation.y -= carConfig.handling * (carSpeed / carConfig.maxSpeed);
+                }
+            }
+            
+            // ДВИЖЕНИЕ МАШИНЫ
+            const direction = new THREE.Vector3(0, 0, -1);
+            direction.applyQuaternion(carModel.quaternion);
+            carModel.position.add(direction.multiplyScalar(carSpeed * 0.02));
+            
+            // ОГРАНИЧЕНИЯ ГРАНИЦ КАРТЫ
+            carModel.position.x = THREE.MathUtils.clamp(carModel.position.x, -MAP_SIZE/2, MAP_SIZE/2);
+            carModel.position.z = THREE.MathUtils.clamp(carModel.position.z, -MAP_SIZE/2, MAP_SIZE/2);
+            
+            // ВОССТАНОВЛЕНИЕ NITRO
+            if (!controls.nitro && nitro < 100) {
+                nitro += 0.1;
+            }
+            
+            // КАМЕРА СЛЕДИТ ЗА МАШИНОЙ (если не вращаем вручную)
+            if (!cameraRotation.active) {
+                const cameraDistance = 25;
+                const cameraHeight = 15;
+                
+                // Плавное следование камеры за машиной
+                const targetCameraPos = new THREE.Vector3(
+                    carModel.position.x,
+                    carModel.position.y + cameraHeight,
+                    carModel.position.z + cameraDistance
+                );
+                
+                camera.position.lerp(targetCameraPos, 0.1);
+                camera.lookAt(carModel.position);
+            }
+            
+            updateOpponents();
+            updateUI();
+        }
+
+        function updateOpponents() {
+            opponents.forEach((opponent, index) => {
+                const oppDirection = new THREE.Vector3(0, 0, -1);
+                opponent.model.position.add(oppDirection.multiplyScalar(opponent.speed * 0.02));
+                
+                // Простой ИИ для оппонентов
+                opponent.model.rotation.y += (Math.sin(Date.now() * 0.001 + index) * 0.01);
+                
+                // Возврат на трассу
+                if (opponent.model.position.x < -TRACK_WIDTH/2 || opponent.model.position.x > TRACK_WIDTH/2) {
+                    opponent.model.rotation.y += Math.PI * 0.02;
+                }
+                
+                // Ограничение границ
+                opponent.model.position.x = THREE.MathUtils.clamp(opponent.model.position.x, -MAP_SIZE/2, MAP_SIZE/2);
+                opponent.model.position.z = THREE.MathUtils.clamp(opponent.model.position.z, -MAP_SIZE/2, MAP_SIZE/2);
+            });
+        }
+
+        function updateUI() {
+            document.getElementById('speed').textContent = Math.round(Math.abs(carSpeed));
+            document.getElementById('lap').textContent = `${currentLap}/${totalLaps}`;
+            document.getElementById('position').textContent = `${playerPosition}-е место`;
+            document.getElementById('carName').textContent = cars[currentCar].name;
+            document.getElementById('carNitro').textContent = `💨 ${Math.round(nitro)}%`;
+        }
+
+        // АНИМАЦИЯ
+        function animate() {
+            if (!gameActive) return;
+            
+            requestAnimationFrame(animate);
+            updateGame();
+            renderer.render(scene, camera);
+        }
+
+        // ЗАПУСК
+        window.addEventListener('load', initGame);
+        
+        window.addEventListener('resize', () => {
+            if (camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
+
+        console.log("🏎️ 3D Гоночная игра с ГИГАНТСКОЙ картой готова!");
+    </script>
+</body>
+</html>
