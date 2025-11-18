@@ -1,875 +1,1566 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>3D Racing Game - Гигантская Карта!</title>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Snow Shooter - Мобильный Шутер</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            background: linear-gradient(45deg, #1a1a2e, #16213e);
-            color: white;
-            font-family: 'Arial', sans-serif;
-            overflow: hidden;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
             touch-action: none;
         }
         
-        #gameContainer {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-        }
-        
-        #gameCanvas {
-            display: block;
+        html, body {
             width: 100%;
             height: 100%;
+            overflow: hidden;
+            background: #000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
         }
         
-        /* ЭКРАН ВЫБОРА МАШИНЫ */
-        #carSelect {
-            position: absolute;
+        #gameContainer {
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.95);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
+            background: #1a1a2e;
         }
         
-        .car-btn {
-            background: linear-gradient(45deg, #2c3e50, #34495e);
-            border: 3px solid #e74c3c;
-            color: white;
-            padding: 20px;
-            margin: 10px;
-            border-radius: 15px;
-            cursor: pointer;
-            width: 300px;
-            font-size: 18px;
-            transition: all 0.3s;
-            text-align: center;
-        }
-        
-        .car-btn:hover {
-            transform: scale(1.05);
-            border-color: #f39c12;
-            background: linear-gradient(45deg, #e74c3c, #f39c12);
-        }
-        
-        /* ИГРОВОЙ ИНТЕРФЕЙС */
-        #gameUI {
+        /* Mobile HUD */
+        #mobileHUD {
             position: absolute;
-            top: 15px;
-            left: 15px;
-            background: rgba(0,0,0,0.8);
-            padding: 15px;
-            border-radius: 12px;
-            border: 2px solid #e74c3c;
-            z-index: 100;
-            display: none;
-        }
-        
-        .stats {
-            margin: 8px 0;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .speed { color: #3498db; }
-        .lap { color: #2ecc71; }
-        .position { color: #f39c12; }
-        
-        /* МОБИЛЬНОЕ УПРАВЛЕНИЕ - КНОПКИ СЛЕВА */
-        #mobileControls {
-            position: absolute;
-            bottom: 20px;
             width: 100%;
-            display: none;
-            justify-content: space-between;
-            padding: 0 20px;
+            height: 100%;
+            pointer-events: none;
             z-index: 100;
+        }
+        
+        /* Верхняя панель */
+        #topPanel {
+            position: absolute;
+            top: 10px;
+            left: 0;
+            width: 100%;
+            padding: 8px 15px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+            display: flex;
+            justify-content: space-between;
             align-items: center;
         }
         
-        .control-section {
+        .weapon-info {
+            background: rgba(255, 70, 85, 0.2);
+            padding: 8px 12px;
+            border-radius: 15px;
+            border: 1px solid #ff4655;
+            backdrop-filter: blur(10px);
+        }
+        
+        .weapon-name {
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 2px;
+        }
+        
+        .ammo-display {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ff4655;
+            text-shadow: 0 0 10px #ff4655;
+        }
+        
+        /* Нижняя панель управления */
+        #bottomPanel {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        
+        /* Левая панель - движение */
+        #leftControls {
             display: flex;
             flex-direction: column;
             gap: 10px;
-            align-items: center;
+            pointer-events: auto;
         }
         
-        .arrow-btn {
-            width: 60px;
-            height: 60px;
-            background: rgba(52, 152, 219, 0.3);
-            border: 2px solid #3498db;
-            border-radius: 15px;
-            color: white;
-            font-size: 24px;
+        .movement-joystick {
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+        
+        .joystick-handle {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 70, 85, 0.8);
+            border: 2px solid #ff4655;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.1s ease;
+        }
+        
+        /* Правая панель - действия */
+        #rightControls {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .arrow-btn:active {
-            background: rgba(52, 152, 219, 0.6);
-            transform: scale(0.95);
-        }
-        
-        .arrow-row {
-            display: flex;
+            flex-direction: column;
             gap: 15px;
+            align-items: flex-end;
+            pointer-events: auto;
         }
         
         .action-btn {
             width: 70px;
             height: 70px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.4);
             border-radius: 50%;
-            color: white;
-            font-size: 22px;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            border: 2px solid;
-            transition: all 0.2s;
+            font-size: 24px;
+            color: white;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+            position: relative;
         }
         
         .action-btn:active {
+            background: rgba(255, 70, 85, 0.4);
+            border-color: #ff4655;
             transform: scale(0.95);
         }
         
-        #nitroBtn {
-            background: rgba(155, 89, 182, 0.3);
-            border-color: #9b59b6;
-        }
-        
-        #brakeBtn {
-            background: rgba(231, 76, 60, 0.3);
-            border-color: #e74c3c;
-        }
-        
-        #cameraRotateArea {
+        .btn-label {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 70%;
-            z-index: 50;
-            display: none;
+            bottom: -20px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.7);
+            white-space: nowrap;
         }
         
-        #carHUD {
+        /* Кнопка стрельбы */
+        #shootBtn {
+            width: 90px;
+            height: 90px;
+            background: radial-gradient(circle, rgba(255,70,85,0.3) 0%, rgba(255,70,85,0.1) 70%);
+            border: 3px solid #ff4655;
+            font-size: 28px;
+        }
+        
+        #shootBtn:active {
+            background: radial-gradient(circle, rgba(255,70,85,0.6) 0%, rgba(255,70,85,0.3) 70%);
+            box-shadow: 0 0 30px rgba(255, 70, 85, 0.5);
+        }
+        
+        /* Центральный кроссхаир */
+        #crosshair {
             position: absolute;
-            bottom: 20px;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.8);
-            padding: 12px 20px;
-            border-radius: 12px;
-            border: 2px solid #e74c3c;
-            display: none;
-            font-size: 16px;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+            z-index: 90;
         }
-
-        .title {
-            font-size: 2.5em;
-            background: linear-gradient(45deg, #e74c3c, #f39c12);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 15px;
-            text-shadow: 0 0 20px rgba(231, 76, 60, 0.5);
-        }
-
-        .subtitle {
-            font-size: 1.3em;
-            color: #bdc3c7;
-            margin-bottom: 30px;
-        }
-
-        /* МИНИ-КАРТА */
-        #miniMap {
+        
+        .crosshair-dot {
+            width: 8px;
+            height: 8px;
+            background: #00ff88;
+            border-radius: 50%;
             position: absolute;
-            top: 15px;
-            right: 15px;
-            width: 120px;
-            height: 120px;
-            background: rgba(0,0,0,0.7);
-            border: 2px solid #3498db;
-            border-radius: 8px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px #00ff88;
+        }
+        
+        .crosshair-line {
+            position: absolute;
+            background: #00ff88;
+            box-shadow: 0 0 8px #00ff88;
+        }
+        
+        .crosshair-top {
+            top: 0;
+            left: 50%;
+            width: 3px;
+            height: 15px;
+            transform: translateX(-50%);
+        }
+        
+        .crosshair-bottom {
+            bottom: 0;
+            left: 50%;
+            width: 3px;
+            height: 15px;
+            transform: translateX(-50%);
+        }
+        
+        .crosshair-left {
+            left: 0;
+            top: 50%;
+            width: 15px;
+            height: 3px;
+            transform: translateY(-50%);
+        }
+        
+        .crosshair-right {
+            right: 0;
+            top: 50%;
+            width: 15px;
+            height: 3px;
+            transform: translateY(-50%);
+        }
+        
+        /* Меню оружия */
+        #weaponWheel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 280px;
+            height: 280px;
+            background: rgba(0, 0, 0, 0.95);
+            border-radius: 50%;
+            border: 4px solid #ff4655;
             display: none;
-            z-index: 100;
+            z-index: 200;
+            pointer-events: auto;
+            backdrop-filter: blur(20px);
+        }
+        
+        .weapon-option {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 70, 85, 0.2);
+            border: 2px solid #ff4655;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .weapon-option:active {
+            background: rgba(255, 70, 85, 0.6);
+            transform: scale(0.9);
+        }
+        
+        .weapon-option.selected {
+            background: rgba(255, 70, 85, 0.8);
+            box-shadow: 0 0 30px #ff4655;
+            transform: scale(1.1);
+        }
+        
+        /* Эффекты */
+        .hit-marker {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+            z-index: 95;
+            opacity: 0;
+        }
+        
+        .hit-line {
+            position: absolute;
+            background: #ff4655;
+            box-shadow: 0 0 10px #ff4655;
+        }
+        
+        .hit-horizontal {
+            width: 30px;
+            height: 4px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .hit-vertical {
+            width: 4px;
+            height: 30px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        /* Снег */
+        .snowflake {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        /* Адаптация под разные экраны */
+        @media (max-height: 700px) {
+            .movement-joystick {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .action-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 20px;
+            }
+            
+            #shootBtn {
+                width: 80px;
+                height: 80px;
+            }
+            
+            #weaponWheel {
+                width: 250px;
+                height: 250px;
+            }
+            
+            .weapon-option {
+                width: 60px;
+                height: 60px;
+                font-size: 24px;
+            }
+        }
+        
+        /* Анимации */
+        @keyframes shootRecoil {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(0.95); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        @keyframes hitMarker {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+        }
+        
+        @keyframes knifeAttack {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(-45deg); }
+            100% { transform: rotate(0deg); }
+        }
+        
+        .shoot-recoil {
+            animation: shootRecoil 0.1s ease-out;
+        }
+        
+        .show-hit {
+            animation: hitMarker 0.3s ease-out;
+        }
+        
+        .knife-attack {
+            animation: knifeAttack 0.2s ease-out;
         }
     </style>
 </head>
 <body>
     <div id="gameContainer">
-        <canvas id="gameCanvas"></canvas>
-        
-        <!-- ОБЛАСТЬ ПОВОРОТА КАМЕРЫ -->
-        <div id="cameraRotateArea"></div>
-        
-        <!-- ВЫБОР МАШИНЫ -->
-        <div id="carSelect">
-            <h1 class="title">🚗 3D RACING GIANT MAP 🏁</h1>
-            <h2 class="subtitle">Выбери свою тачку:</h2>
-            
-            <button class="car-btn" onclick="selectCar('bmw')">
-                🚙 BMW X5<br>
-                <small>Скорость: 250 км/ч | Управление: Отличное</small>
-            </button>
-            
-            <button class="car-btn" onclick="selectCar('mercedes')">
-                🚗 Mercedes G-Class<br>
-                <small>Скорость: 250 км/ч | Проходимость: Высокая</small>
-            </button>
-            
-            <button class="car-btn" onclick="selectCar('audi')">
-                🏎️ Audi R8<br>
-                <small>Скорость: 250 км/ч | Ускорение: Максимальное</small>
-            </button>
-            
-            <button style="
-                background: linear-gradient(45deg, #e74c3c, #f39c12);
-                color: white;
-                border: none;
-                padding: 20px 40px;
-                border-radius: 15px;
-                font-size: 20px;
-                margin-top: 30px;
-                cursor: pointer;
-                border: 2px solid #fff;
-                font-weight: bold;
-            " onclick="startGame()">🏁 НАЧАТЬ ГОНКУ!</button>
-        </div>
-        
-        <!-- ИГРОВОЙ ИНТЕРФЕЙС -->
-        <div id="gameUI">
-            <div class="stats">🚀 <span id="speed" class="speed">0</span> км/ч</div>
-            <div class="stats">🏁 <span id="lap" class="lap">1</span>/3 круг</div>
-            <div class="stats">📊 <span id="position" class="position">1-е место</span></div>
-        </div>
+        <!-- 3D сцена будет здесь -->
+    </div>
 
-        <!-- МИНИ-КАРТА -->
-        <div id="miniMap"></div>
-        
-        <div id="carHUD">
-            <span id="carName">BMW X5</span> | 
-            <span id="carNitro">💨 100%</span>
+    <!-- Mobile HUD -->
+    <div id="mobileHUD">
+        <!-- Верхняя панель -->
+        <div id="topPanel">
+            <div class="weapon-info">
+                <div class="weapon-name" id="weaponName">PISTOL</div>
+                <div class="ammo-display" id="ammoDisplay">12/24</div>
+            </div>
+            <div class="action-btn" id="menuBtn" style="width: 50px; height: 50px; font-size: 20px;">
+                ⚙️
+                <div class="btn-label">МЕНЮ</div>
+            </div>
         </div>
         
-        <!-- МОБИЛЬНОЕ УПРАВЛЕНИЕ - КНОПКИ СЛЕВА -->
-        <div id="mobileControls">
-            <!-- ЛЕВАЯ ЧАСТЬ - УСКОРЕНИЕ И ТОРМОЗ -->
-            <div class="control-section">
-                <div class="action-btn" id="nitroBtn">💨</div>
-                <div class="action-btn" id="brakeBtn">🛑</div>
+        <!-- Кроссхаир -->
+        <div id="crosshair">
+            <div class="crosshair-dot"></div>
+            <div class="crosshair-line crosshair-top"></div>
+            <div class="crosshair-line crosshair-bottom"></div>
+            <div class="crosshair-line crosshair-left"></div>
+            <div class="crosshair-line crosshair-right"></div>
+        </div>
+        
+        <!-- Маркер попадания -->
+        <div class="hit-marker" id="hitMarker">
+            <div class="hit-line hit-horizontal"></div>
+            <div class="hit-line hit-vertical"></div>
+        </div>
+        
+        <!-- Нижняя панель управления -->
+        <div id="bottomPanel">
+            <!-- Левая панель - движение -->
+            <div id="leftControls">
+                <div class="movement-joystick" id="moveJoystick">
+                    <div class="joystick-handle" id="moveHandle"></div>
+                </div>
+                <div class="action-btn" id="jumpBtn">
+                    🦘
+                    <div class="btn-label">ПРЫЖОК</div>
+                </div>
             </div>
             
-            <!-- ПРАВАЯ ЧАСТЬ - СТРЕЛКИ -->
-            <div class="control-section">
-                <div class="arrow-row">
-                    <div class="arrow-btn" id="forwardBtn">↑</div>
+            <!-- Правая панель - действия -->
+            <div id="rightControls">
+                <div class="action-btn" id="reloadBtn">
+                    ↻
+                    <div class="btn-label">ПЕРЕЗАРЯДКА</div>
                 </div>
-                <div class="arrow-row">
-                    <div class="arrow-btn" id="leftBtn">←</div>
-                    <div style="width: 60px; height: 60px;"></div>
-                    <div class="arrow-btn" id="rightBtn">→</div>
+                <div class="action-btn" id="weaponBtn">
+                    🔫
+                    <div class="btn-label">ОРУЖИЕ</div>
                 </div>
-                <div class="arrow-row">
-                    <div class="arrow-btn" id="backwardBtn">↓</div>
+                <div class="action-btn" id="shootBtn">
+                    🔥
+                    <div class="btn-label">ОГОНЬ</div>
                 </div>
             </div>
+        </div>
+        
+        <!-- Колесо оружия -->
+        <div id="weaponWheel">
+            <div class="weapon-option" style="top: 20px; left: 50%; transform: translateX(-50%);" data-weapon="pistol">🔫</div>
+            <div class="weapon-option" style="top: 50%; right: 20px; transform: translateY(-50%);" data-weapon="shotgun">💥</div>
+            <div class="weapon-option" style="bottom: 20px; left: 50%; transform: translateX(-50%);" data-weapon="smg">🔫</div>
+            <div class="weapon-option" style="top: 50%; left: 20px; transform: translateY(-50%);" data-weapon="rifle">🔫</div>
+            <div class="weapon-option" style="top: 25%; left: 25%; transform: translate(-50%, -50%);" data-weapon="sniper">🎯</div>
+            <div class="weapon-option" style="top: 25%; right: 25%; transform: translate(50%, -50%);" data-weapon="mg">🔥</div>
+            <div class="weapon-option" style="bottom: 25%; left: 25%; transform: translate(-50%, -50%);" data-weapon="knife">🔪</div>
         </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // КОНФИГУРАЦИЯ МАШИН
-        const cars = {
-            bmw: { 
-                name: "BMW X5", 
-                maxSpeed: 250,
-                acceleration: 0.06,
-                handling: 0.03,
-                color: 0x0066cc,
-                scale: 1.2
+        // === КОНФИГУРАЦИЯ ИГРЫ ===
+        const GameConfig = {
+            graphics: {
+                shadows: true,
+                antialiasing: true,
+                fog: true,
+                particleCount: 100
             },
-            mercedes: { 
-                name: "Mercedes G-Class", 
-                maxSpeed: 250,
-                acceleration: 0.05,
-                handling: 0.025,
-                color: 0x000000,
-                scale: 1.3
+            controls: {
+                sensitivity: 0.01,
+                joystickDeadzone: 0.1,
+                maxMoveSpeed: 0.5,
+                jumpForce: 0.2
             },
-            audi: { 
-                name: "Audi R8", 
-                maxSpeed: 250,
-                acceleration: 0.08,
-                handling: 0.035,
-                color: 0xff0000,
-                scale: 1.0
+            weapons: {
+                pistol: { damage: 25, fireRate: 300, reloadTime: 1.5, ammo: 12, maxAmmo: 24, isMelee: false },
+                shotgun: { damage: 80, fireRate: 70, reloadTime: 2.0, ammo: 6, maxAmmo: 24, isMelee: false },
+                smg: { damage: 20, fireRate: 800, reloadTime: 2.5, ammo: 30, maxAmmo: 120, isMelee: false },
+                rifle: { damage: 35, fireRate: 600, reloadTime: 2.2, ammo: 30, maxAmmo: 90, isMelee: false },
+                sniper: { damage: 100, fireRate: 41, reloadTime: 3.0, ammo: 5, maxAmmo: 20, isMelee: false },
+                mg: { damage: 30, fireRate: 900, reloadTime: 4.0, ammo: 100, maxAmmo: 200, isMelee: false },
+                knife: { damage: 50, fireRate: 200, reloadTime: 0, ammo: 999, maxAmmo: 999, isMelee: true }
+            },
+            world: {
+                gravity: -0.01,
+                floorFriction: 0.9,
+                playerHeight: 1.7,
+                playerRadius: 0.3
             }
         };
 
-        // ПЕРЕМЕННЫЕ ИГРЫ
+        // === ПЕРЕМЕННЫЕ ===
         let scene, camera, renderer;
-        let carModel, track, opponents = [];
-        let currentCar = 'bmw';
-        let gameActive = false;
-        let carSpeed = 0;
-        let currentLap = 1;
-        let totalLaps = 3;
-        let playerPosition = 1;
-        let nitro = 100;
-        
-        // УПРАВЛЕНИЕ СТРЕЛКАМИ
-        let controls = { 
-            forward: false, 
-            backward: false, 
-            left: false, 
-            right: false,
-            nitro: false, 
-            brake: false 
-        };
+        let weaponModel, currentWeapon = 'pistol';
+        let isShooting = false, isReloading = false, canShoot = true;
+        let moveJoystickActive = false;
+        let moveJoystickStart = { x: 0, y: 0 };
+        let moveInput = { x: 0, y: 0 };
+        let lookTouchActive = false;
+        let lookTouchStart = { x: 0, y: 0 };
+        let lookInput = { x: 0, y: 0 };
+        let playerVelocity = new THREE.Vector3();
+        let isGrounded = true;
+        let enemies = [];
+        let playerHealth = 100;
+        let snowflakes = [];
+        let cameraTouchId = null;
 
-        // ПОВОРОТ КАМЕРЫ
-        let cameraRotation = {
-            active: false,
-            startX: 0,
-            startY: 0,
-            currentX: 0,
-            currentY: 0,
-            sensitivity: 0.01
-        };
-
-        // РАЗМЕРЫ КАРТЫ (ГИГАНТСКИЕ - 10000x10000!)
-        const MAP_SIZE = 10000;
-        const TRACK_WIDTH = 200;
-
-        // ИНИЦИАЛИЗАЦИЯ THREE.JS
-        function initGame() {
-            console.log("🚗 Инициализация 3D гоночной игры с ГИГАНТСКОЙ картой...");
-            
-            // СОЗДАЕМ СЦЕНУ
+        // === ОСНОВНЫЕ ФУНКЦИИ ===
+        function initThreeJS() {
             scene = new THREE.Scene();
+            // Снежный фон
             scene.background = new THREE.Color(0x87CEEB);
-            scene.fog = new THREE.Fog(0x87CEEB, 1000, 5000);
+            scene.fog = new THREE.Fog(0x87CEEB, 10, 50);
             
-            // КАМЕРА - вид от третьего лица
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-            camera.position.set(0, 20, 30);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, GameConfig.world.playerHeight, 5);
             
-            // РЕНДЕРЕР
             renderer = new THREE.WebGLRenderer({ 
-                canvas: document.getElementById('gameCanvas'), 
-                antialias: true 
+                antialias: GameConfig.graphics.antialiasing,
+                alpha: true
             });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.enabled = GameConfig.graphics.shadows;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('gameContainer').appendChild(renderer.domElement);
             
-            // ОСВЕЩЕНИЕ
-            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            setupLighting();
+            createSnowWorld();
+            createWeapon();
+            createSnowfall();
+            
+            console.log("ThreeJS инициализирован");
+        }
+
+        function setupLighting() {
+            // Холодное освещение для снежной атмосферы
+            const ambientLight = new THREE.AmbientLight(0x404080, 0.6);
             scene.add(ambientLight);
             
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
-            directionalLight.position.set(5000, 10000, 5000);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 20, 5);
             directionalLight.castShadow = true;
-            directionalLight.shadow.mapSize.width = 2048;
-            directionalLight.shadow.mapSize.height = 2048;
             scene.add(directionalLight);
             
-            // СОЗДАЕМ ГИГАНТСКУЮ ТРАССУ И ОКРУЖЕНИЕ
-            createGiantTrack();
-            createGiantEnvironment();
-            
-            console.log("✅ 3D гоночная игра с ГИГАНТСКОЙ картой готова!");
+            const fillLight = new THREE.HemisphereLight(0x87CEEB, 0x444444, 0.4);
+            scene.add(fillLight);
         }
 
-        function createGiantTrack() {
-            // ГИГАНТСКОЕ ПОЛОТНО ТРАССЫ
-            const trackGeometry = new THREE.PlaneGeometry(MAP_SIZE, MAP_SIZE);
-            const trackMaterial = new THREE.MeshLambertMaterial({ 
-                color: 0x228B22,
+        function createSnowWorld() {
+            // Снежный пол
+            const floorGeometry = new THREE.PlaneGeometry(100, 100);
+            const floorMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0xffffff,
+                roughness: 0.9,
+                metalness: 0.1
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+            
+            createSnowHills();
+            createSnowyTrees();
+            createSnowmen();
+            createEnemies();
+            
+            console.log("Снежный мир создан");
+        }
+
+        function createSnowHills() {
+            const hillGeometry = new THREE.SphereGeometry(8, 32, 32);
+            const hillMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0xffffff,
                 roughness: 0.9
             });
-            track = new THREE.Mesh(trackGeometry, trackMaterial);
-            track.rotation.x = -Math.PI / 2;
-            track.receiveShadow = true;
-            scene.add(track);
-
-            // АСФАЛЬТОВАЯ ДОРОГА
-            const roadGeometry = new THREE.PlaneGeometry(TRACK_WIDTH, MAP_SIZE);
-            const roadMaterial = new THREE.MeshLambertMaterial({ 
-                color: 0x333333,
-                roughness: 0.7
-            });
-            const road = new THREE.Mesh(roadGeometry, roadMaterial);
-            road.rotation.x = -Math.PI / 2;
-            road.position.y = 0.01;
-            road.receiveShadow = true;
-            scene.add(road);
-
-            // РАЗМЕТКА ДОРОГИ
-            const lineGeometry = new THREE.PlaneGeometry(3, 30);
-            const lineMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
             
-            // Центральная прерывистая линия
-            for (let z = -MAP_SIZE/2; z <= MAP_SIZE/2; z += 60) {
-                const line = new THREE.Mesh(lineGeometry, lineMaterial);
-                line.rotation.x = -Math.PI / 2;
-                line.position.set(0, 0.02, z);
-                scene.add(line);
-            }
-
-            // БОРДЮРЫ
-            const curbGeometry = new THREE.BoxGeometry(TRACK_WIDTH + 20, 2, 8);
-            const curbMaterial = new THREE.MeshLambertMaterial({ color: 0x666666 });
-            
-            const leftCurb = new THREE.Mesh(curbGeometry, curbMaterial);
-            leftCurb.position.set(-TRACK_WIDTH/2 - 4, 1, 0);
-            scene.add(leftCurb);
-            
-            const rightCurb = new THREE.Mesh(curbGeometry, curbMaterial);
-            rightCurb.position.set(TRACK_WIDTH/2 + 4, 1, 0);
-            scene.add(rightCurb);
-
-            // ДОРОЖНАЯ РАЗМЕТКА ПО БОКАМ
-            const sideLineGeometry = new THREE.PlaneGeometry(1, MAP_SIZE);
-            const sideLineMaterial = new THREE.MeshLambertMaterial({ color: 0xffff00 });
-            
-            const leftLine = new THREE.Mesh(sideLineGeometry, sideLineMaterial);
-            leftLine.rotation.x = -Math.PI / 2;
-            leftLine.position.set(-TRACK_WIDTH/2 + 5, 0.03, 0);
-            scene.add(leftLine);
-            
-            const rightLine = new THREE.Mesh(sideLineGeometry, sideLineMaterial);
-            rightLine.rotation.x = -Math.PI / 2;
-            rightLine.position.set(TRACK_WIDTH/2 - 5, 0.03, 0);
-            scene.add(rightLine);
-        }
-
-        function createGiantEnvironment() {
-            // ОГРОМНЫЕ ГОРЫ
-            const mountainGeometry = new THREE.ConeGeometry(500, 800, 16);
-            const mountainMaterial = new THREE.MeshLambertMaterial({ color: 0x795548 });
-            
-            // Создаем горный хребет по периметру карты
-            const mountainPositions = [
-                { x: -4000, z: -4000 }, { x: -2000, z: -4500 }, { x: 0, z: -4800 },
-                { x: 2000, z: -4500 }, { x: 4000, z: -4000 }, { x: 4500, z: -2000 },
-                { x: 4800, z: 0 }, { x: 4500, z: 2000 }, { x: 4000, z: 4000 },
-                { x: 2000, z: 4500 }, { x: 0, z: 4800 }, { x: -2000, z: 4500 },
-                { x: -4000, z: 4000 }, { x: -4500, z: 2000 }, { x: -4800, z: 0 },
-                { x: -4500, z: -2000 }
-            ];
-            
-            mountainPositions.forEach(pos => {
-                const mountain = new THREE.Mesh(mountainGeometry, mountainMaterial);
-                mountain.position.set(pos.x, 400, pos.z);
-                mountain.rotation.y = Math.random() * Math.PI;
-                scene.add(mountain);
-            });
-
-            // ОГРОМНЫЙ ЛЕС
-            const treeTrunkGeometry = new THREE.CylinderGeometry(3, 4, 20, 8);
-            const treeTrunkMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-            const treeLeavesGeometry = new THREE.SphereGeometry(12);
-            const treeLeavesMaterial = new THREE.MeshLambertMaterial({ color: 0x228B22 });
-            
-            // Создаем ОЧЕНЬ много деревьев
-            for (let i = 0; i < 300; i++) {
-                const treeTrunk = new THREE.Mesh(treeTrunkGeometry, treeTrunkMaterial);
-                const treeLeaves = new THREE.Mesh(treeLeavesGeometry, treeLeavesMaterial);
-                
-                const side = Math.random() > 0.5 ? 1 : -1;
-                const x = side * (TRACK_WIDTH/2 + 100 + Math.random() * 1000);
-                const z = (Math.random() - 0.5) * MAP_SIZE;
-                
-                treeTrunk.position.set(x, 10, z);
-                treeLeaves.position.set(x, 25, z);
-                
-                treeTrunk.castShadow = true;
-                treeLeaves.castShadow = true;
-                
-                scene.add(treeTrunk);
-                scene.add(treeLeaves);
-            }
-
-            // БОЛЬШИЕ ЗДАНИЯ
-            const buildingGeometry = new THREE.BoxGeometry(80, 150, 80);
-            const buildingMaterial = new THREE.MeshLambertMaterial({ color: 0x95a5a6 });
-            
-            for (let i = 0; i < 50; i++) {
-                const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
-                const side = Math.random() > 0.5 ? 1 : -1;
-                const x = side * (TRACK_WIDTH/2 + 300 + Math.random() * 1500);
-                const z = (Math.random() - 0.5) * MAP_SIZE;
-                
-                building.position.set(x, 75, z);
-                building.castShadow = true;
-                scene.add(building);
-            }
-
-            // ОСВЕЩЕНИЕ И СТОЛБЫ ВДОЛЬ ТРАССЫ
-            const lampPostGeometry = new THREE.CylinderGeometry(2, 2, 40, 8);
-            const lampPostMaterial = new THREE.MeshLambertMaterial({ color: 0x34495e });
-            const lampGeometry = new THREE.SphereGeometry(5);
-            const lampMaterial = new THREE.MeshLambertMaterial({ color: 0xf1c40f });
-            
-            for (let z = -MAP_SIZE/2; z <= MAP_SIZE/2; z += 200) {
-                const lampPost = new THREE.Mesh(lampPostGeometry, lampPostMaterial);
-                const lamp = new THREE.Mesh(lampGeometry, lampMaterial);
-                
-                lampPost.position.set(TRACK_WIDTH/2 + 15, 20, z);
-                lamp.position.set(TRACK_WIDTH/2 + 15, 40, z);
-                
-                scene.add(lampPost);
-                scene.add(lamp);
-                
-                // Столбы с другой стороны
-                const lampPost2 = new THREE.Mesh(lampPostGeometry, lampPostMaterial);
-                const lamp2 = new THREE.Mesh(lampGeometry, lampMaterial);
-                
-                lampPost2.position.set(-TRACK_WIDTH/2 - 15, 20, z);
-                lamp2.position.set(-TRACK_WIDTH/2 - 15, 40, z);
-                
-                scene.add(lampPost2);
-                scene.add(lamp2);
-            }
-
-            // ОЗЕРА И ВОДОЕМЫ
-            const lakeGeometry = new THREE.PlaneGeometry(500, 300);
-            const lakeMaterial = new THREE.MeshLambertMaterial({ 
-                color: 0x2980b9,
-                transparent: true,
-                opacity: 0.7
-            });
-            
-            for (let i = 0; i < 10; i++) {
-                const lake = new THREE.Mesh(lakeGeometry, lakeMaterial);
-                const side = Math.random() > 0.5 ? 1 : -1;
-                const x = side * (TRACK_WIDTH/2 + 600 + Math.random() * 2000);
-                const z = (Math.random() - 0.5) * MAP_SIZE;
-                
-                lake.rotation.x = -Math.PI / 2;
-                lake.position.set(x, 0.05, z);
-                scene.add(lake);
+            for (let i = 0; i < 12; i++) {
+                const hill = new THREE.Mesh(hillGeometry, hillMaterial);
+                const size = 6 + Math.random() * 10;
+                hill.scale.set(size, size * 0.4, size);
+                hill.position.set(
+                    (Math.random() - 0.5) * 80,
+                    size * 0.4 - 3,
+                    -20 - Math.random() * 40
+                );
+                hill.castShadow = true;
+                hill.receiveShadow = true;
+                scene.add(hill);
             }
         }
 
-        // СОЗДАНИЕ 3D МОДЕЛИ МАШИНЫ
-        function createCarModel(carType) {
-            console.log(`🚗 Создание модели машины: ${carType}`);
-            
-            if (carModel) scene.remove(carModel);
-            
-            const carConfig = cars[carType];
-            const carGroup = new THREE.Group();
-            
-            // КУЗОВ
-            const bodyGeometry = new THREE.BoxGeometry(3, 1, 6);
-            const bodyMaterial = new THREE.MeshLambertMaterial({ 
-                color: carConfig.color,
-                roughness: 0.3,
-                metalness: 0.7
-            });
-            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-            body.castShadow = true;
-            carGroup.add(body);
-
-            // КАБИНА
-            const cabinGeometry = new THREE.BoxGeometry(2.5, 1, 2);
-            const cabinMaterial = new THREE.MeshLambertMaterial({ 
-                color: 0x222222,
-                transparent: true,
-                opacity: 0.8
-            });
-            const cabin = new THREE.Mesh(cabinGeometry, cabinMaterial);
-            cabin.position.set(0, 1.2, -0.5);
-            cabin.castShadow = true;
-            carGroup.add(cabin);
-
-            // КОЛЕСА
-            const wheelGeometry = new THREE.CylinderGeometry(0.6, 0.6, 0.4, 16);
-            const wheelMaterial = new THREE.MeshLambertMaterial({ color: 0x111111 });
-            
-            const wheelPositions = [
-                { x: -1.5, y: -0.5, z: 1.8 }, { x: 1.5, y: -0.5, z: 1.8 },
-                { x: -1.5, y: -0.5, z: -1.8 }, { x: 1.5, y: -0.5, z: -1.8 }
-            ];
-            
-            wheelPositions.forEach(pos => {
-                const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
-                wheel.position.set(pos.x, pos.y, pos.z);
-                wheel.rotation.z = Math.PI / 2;
-                wheel.castShadow = true;
-                carGroup.add(wheel);
-            });
-
-            carModel = carGroup;
-            carModel.scale.set(carConfig.scale, carConfig.scale, carConfig.scale);
-            scene.add(carModel);
-
-            console.log("✅ Машина создана!");
+        function createSnowyTrees() {
+            for (let i = 0; i < 25; i++) {
+                createSnowyTree(
+                    (Math.random() - 0.5) * 80,
+                    0,
+                    -10 - Math.random() * 60
+                );
+            }
         }
 
-        function createOpponents() {
-            const opponentColors = [0xff4444, 0x44ff44, 0x4444ff, 0xffff44];
+        function createSnowyTree(x, y, z) {
+            const treeGroup = new THREE.Group();
             
-            for (let i = 0; i < 4; i++) {
-                const opponentGroup = new THREE.Group();
+            // Ствол
+            const trunkGeometry = new THREE.CylinderGeometry(0.2, 0.3, 2.5, 8);
+            const trunkMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+            const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+            trunk.position.y = 1.25;
+            trunk.castShadow = true;
+            treeGroup.add(trunk);
+            
+            // Снежная крона
+            const crownGeometry = new THREE.SphereGeometry(1.8, 16, 16);
+            const crownMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0xffffff,
+                roughness: 0.8
+            });
+            const crown = new THREE.Mesh(crownGeometry, crownMaterial);
+            crown.position.y = 3.2;
+            crown.castShadow = true;
+            treeGroup.add(crown);
+            
+            treeGroup.position.set(x, y, z);
+            scene.add(treeGroup);
+        }
+
+        function createSnowmen() {
+            for (let i = 0; i < 8; i++) {
+                createSnowman(
+                    (Math.random() - 0.5) * 60,
+                    0,
+                    -15 - Math.random() * 40
+                );
+            }
+        }
+
+        function createSnowman(x, y, z) {
+            const snowmanGroup = new THREE.Group();
+            
+            // Нижний шар
+            const bottomGeometry = new THREE.SphereGeometry(1, 16, 16);
+            const bottomMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+            const bottom = new THREE.Mesh(bottomGeometry, bottomMaterial);
+            bottom.position.y = 1;
+            bottom.castShadow = true;
+            snowmanGroup.add(bottom);
+            
+            // Средний шар
+            const middleGeometry = new THREE.SphereGeometry(0.7, 16, 16);
+            const middle = new THREE.Mesh(middleGeometry, bottomMaterial);
+            middle.position.y = 2.2;
+            middle.castShadow = true;
+            snowmanGroup.add(middle);
+            
+            // Голова
+            const headGeometry = new THREE.SphereGeometry(0.5, 16, 16);
+            const head = new THREE.Mesh(headGeometry, bottomMaterial);
+            head.position.y = 3.2;
+            head.castShadow = true;
+            snowmanGroup.add(head);
+            
+            // Глаза
+            const eyeGeometry = new THREE.SphereGeometry(0.05, 8, 8);
+            const eyeMaterial = new THREE.MeshLambertMaterial({ color: 0x000000 });
+            const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            leftEye.position.set(-0.15, 3.2, 0.45);
+            rightEye.position.set(0.15, 3.2, 0.45);
+            snowmanGroup.add(leftEye);
+            snowmanGroup.add(rightEye);
+            
+            // Нос (морковка)
+            const noseGeometry = new THREE.ConeGeometry(0.05, 0.3, 8);
+            const noseMaterial = new THREE.MeshLambertMaterial({ color: 0xff8c00 });
+            const nose = new THREE.Mesh(noseGeometry, noseMaterial);
+            nose.rotation.x = Math.PI / 2;
+            nose.position.set(0, 3.2, 0.5);
+            snowmanGroup.add(nose);
+            
+            snowmanGroup.position.set(x, y, z);
+            scene.add(snowmanGroup);
+        }
+
+        function createSnowfall() {
+            // Создаем снежинки в 3D пространстве
+            for (let i = 0; i < GameConfig.graphics.particleCount; i++) {
+                const snowflake = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.1, 8, 8),
+                    new THREE.MeshBasicMaterial({ 
+                        color: 0xffffff,
+                        transparent: true,
+                        opacity: 0.8
+                    })
+                );
                 
-                const bodyGeometry = new THREE.BoxGeometry(3, 1, 6);
+                snowflake.position.set(
+                    Math.random() * 100 - 50,
+                    Math.random() * 50 + 10,
+                    Math.random() * 100 - 50
+                );
+                
+                snowflake.userData = {
+                    speed: 0.02 + Math.random() * 0.03,
+                    swing: Math.random() * 0.02
+                };
+                
+                scene.add(snowflake);
+                snowflakes.push(snowflake);
+            }
+        }
+
+        function updateSnowfall() {
+            const time = Date.now() * 0.001;
+            
+            snowflakes.forEach((snowflake, index) => {
+                // Падение вниз
+                snowflake.position.y -= snowflake.userData.speed;
+                
+                // Легкое колебание из стороны в сторону
+                snowflake.position.x += Math.sin(time + index) * snowflake.userData.swing;
+                
+                // Если снежинка упала слишком низко, перемещаем её наверх
+                if (snowflake.position.y < -10) {
+                    snowflake.position.y = 50;
+                    snowflake.position.x = Math.random() * 100 - 50;
+                    snowflake.position.z = Math.random() * 100 - 50;
+                }
+            });
+        }
+
+        // === СИСТЕМА ОРУЖИЯ ===
+        function createWeapon() {
+            weaponModel = new THREE.Group();
+            updateWeaponModel();
+            scene.add(weaponModel);
+            console.log("Оружие создано");
+        }
+
+        function updateWeaponModel() {
+            while(weaponModel.children.length > 0) {
+                weaponModel.remove(weaponModel.children[0]);
+            }
+            
+            let color, size, details;
+            
+            switch(currentWeapon) {
+                case 'pistol':
+                    color = 0x333333;
+                    size = { length: 0.3, height: 0.08, width: 0.12 };
+                    details = { hasStock: false, barrelLength: 0.15, isPistol: true };
+                    break;
+                case 'shotgun':
+                    color = 0x8B4513;
+                    size = { length: 0.5, height: 0.12, width: 0.18 };
+                    details = { hasStock: true, barrelLength: 0.25, isPistol: false };
+                    break;
+                case 'smg':
+                    color = 0x666666;
+                    size = { length: 0.4, height: 0.1, width: 0.15 };
+                    details = { hasStock: true, barrelLength: 0.2, isPistol: false };
+                    break;
+                case 'rifle':
+                    color = 0x2F4F4F;
+                    size = { length: 0.6, height: 0.11, width: 0.2 };
+                    details = { hasStock: true, barrelLength: 0.3, isPistol: false };
+                    break;
+                case 'sniper':
+                    color = 0x444444;
+                    size = { length: 0.7, height: 0.13, width: 0.25 };
+                    details = { hasStock: true, barrelLength: 0.4, isPistol: false };
+                    break;
+                case 'mg':
+                    color = 0x555555;
+                    size = { length: 0.65, height: 0.15, width: 0.3 };
+                    details = { hasStock: true, barrelLength: 0.35, isPistol: false };
+                    break;
+                case 'knife':
+                    color = 0x888888;
+                    size = { length: 0.2, height: 0.02, width: 0.05 };
+                    details = { hasStock: false, barrelLength: 0, isPistol: false, isKnife: true };
+                    break;
+            }
+            
+            if (currentWeapon === 'knife') {
+                // Модель ножа
+                const bladeGeometry = new THREE.BoxGeometry(size.length * 0.7, size.height * 2, size.width * 0.3);
+                const bladeMaterial = new THREE.MeshLambertMaterial({ color: 0xcccccc });
+                const blade = new THREE.Mesh(bladeGeometry, bladeMaterial);
+                blade.position.set(size.length * 0.15, 0, 0);
+                weaponModel.add(blade);
+                
+                const handleGeometry = new THREE.BoxGeometry(size.length * 0.3, size.height * 3, size.width);
+                const handleMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+                const handle = new THREE.Mesh(handleGeometry, handleMaterial);
+                handle.position.set(-size.length * 0.15, 0, 0);
+                weaponModel.add(handle);
+            } else {
+                // Модель огнестрельного оружия
+                const bodyGeometry = new THREE.BoxGeometry(size.length, size.height, size.width);
                 const bodyMaterial = new THREE.MeshLambertMaterial({ 
-                    color: opponentColors[i],
-                    roughness: 0.3
+                    color: color,
+                    roughness: 0.7,
+                    metalness: 0.3
                 });
                 const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-                opponentGroup.add(body);
-
-                opponentGroup.position.set(
-                    (Math.random() - 0.5) * 30,
-                    1.5,
-                    -80 - i * 50
-                );
+                body.castShadow = true;
+                weaponModel.add(body);
                 
-                opponents.push({
-                    model: opponentGroup,
-                    speed: 60 + Math.random() * 40,
-                    lap: 1
-                });
-                
-                scene.add(opponentGroup);
-            }
-        }
-
-        function selectCar(car) {
-            currentCar = car;
-            console.log(`🚗 Выбрана: ${cars[car].name}`);
-        }
-
-        function startGame() {
-            console.log("🏁 Запуск гонки на ГИГАНТСКОЙ карте...");
-            
-            document.getElementById('carSelect').style.display = 'none';
-            document.getElementById('gameUI').style.display = 'block';
-            document.getElementById('carHUD').style.display = 'block';
-            document.getElementById('mobileControls').style.display = 'flex';
-            document.getElementById('miniMap').style.display = 'block';
-            document.getElementById('cameraRotateArea').style.display = 'block';
-            
-            createCarModel(currentCar);
-            createOpponents();
-            setupMobileControls();
-            setupCameraRotation();
-            
-            gameActive = true;
-            updateUI();
-            animate();
-        }
-
-        // УПРАВЛЕНИЕ СТРЕЛКАМИ
-        function setupMobileControls() {
-            // СТРЕЛКИ ДВИЖЕНИЯ (ПРАВАЯ ЧАСТЬ)
-            document.getElementById('forwardBtn').addEventListener('touchstart', (e) => {
-                e.preventDefault(); controls.forward = true;
-            });
-            document.getElementById('forwardBtn').addEventListener('touchend', () => {
-                controls.forward = false;
-            });
-            
-            document.getElementById('backwardBtn').addEventListener('touchstart', (e) => {
-                e.preventDefault(); controls.backward = true;
-            });
-            document.getElementById('backwardBtn').addEventListener('touchend', () => {
-                controls.backward = false;
-            });
-            
-            document.getElementById('leftBtn').addEventListener('touchstart', (e) => {
-                e.preventDefault(); controls.left = true;
-            });
-            document.getElementById('leftBtn').addEventListener('touchend', () => {
-                controls.left = false;
-            });
-            
-            document.getElementById('rightBtn').addEventListener('touchstart', (e) => {
-                e.preventDefault(); controls.right = true;
-            });
-            document.getElementById('rightBtn').addEventListener('touchend', () => {
-                controls.right = false;
-            });
-            
-            // КНОПКИ ДЕЙСТВИЙ (ЛЕВАЯ ЧАСТЬ)
-            document.getElementById('nitroBtn').addEventListener('touchstart', (e) => {
-                e.preventDefault(); 
-                if (nitro > 0) controls.nitro = true;
-            });
-            document.getElementById('nitroBtn').addEventListener('touchend', () => {
-                controls.nitro = false;
-            });
-            
-            document.getElementById('brakeBtn').addEventListener('touchstart', (e) => {
-                e.preventDefault(); controls.brake = true;
-            });
-            document.getElementById('brakeBtn').addEventListener('touchend', () => {
-                controls.brake = false;
-            });
-        }
-
-        // ПОВОРОТ КАМЕРЫ ПАЛЬЦЕМ
-        function setupCameraRotation() {
-            const cameraArea = document.getElementById('cameraRotateArea');
-            
-            cameraArea.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                if (e.touches.length === 1) {
-                    cameraRotation.active = true;
-                    cameraRotation.startX = e.touches[0].clientX;
-                    cameraRotation.startY = e.touches[0].clientY;
+                if (details.hasStock) {
+                    const stockGeometry = new THREE.BoxGeometry(size.length * 0.3, size.height * 0.8, size.width * 0.8);
+                    const stockMaterial = new THREE.MeshLambertMaterial({ color: 0x000000 });
+                    const stock = new THREE.Mesh(stockGeometry, stockMaterial);
+                    stock.position.set(-size.length * 0.25, 0, 0);
+                    weaponModel.add(stock);
                 }
-            });
-            
-            cameraArea.addEventListener('touchmove', (e) => {
-                if (!cameraRotation.active || e.touches.length !== 1) return;
-                e.preventDefault();
                 
-                cameraRotation.currentX = e.touches[0].clientX;
-                cameraRotation.currentY = e.touches[0].clientY;
+                if (details.barrelLength > 0) {
+                    const barrelGeometry = new THREE.CylinderGeometry(0.015, 0.015, details.barrelLength, 8);
+                    const barrelMaterial = new THREE.MeshLambertMaterial({ color: 0x111111 });
+                    const barrel = new THREE.Mesh(barrelGeometry, barrelMaterial);
+                    barrel.rotation.z = Math.PI / 2;
+                    barrel.position.set(size.length * 0.3 + details.barrelLength * 0.5, 0, 0);
+                    weaponModel.add(barrel);
+                }
                 
-                const deltaX = (cameraRotation.currentX - cameraRotation.startX) * cameraRotation.sensitivity;
-                const deltaY = (cameraRotation.currentY - cameraRotation.startY) * cameraRotation.sensitivity;
-                
-                // Поворот камеры вокруг машины
-                camera.rotation.y -= deltaX;
-                camera.rotation.x = THREE.MathUtils.clamp(camera.rotation.x - deltaY, -Math.PI/3, Math.PI/6);
-                
-                cameraRotation.startX = cameraRotation.currentX;
-                cameraRotation.startY = cameraRotation.currentY;
-            });
+                const gripGeometry = new THREE.BoxGeometry(size.width * 0.8, size.height * 1.2, size.width * 0.8);
+                const gripMaterial = new THREE.MeshLambertMaterial({ color: 0x000000 });
+                const grip = new THREE.Mesh(gripGeometry, gripMaterial);
+                grip.position.set(0, -size.height * 1.1, 0);
+                weaponModel.add(grip);
+            }
             
-            cameraArea.addEventListener('touchend', () => {
-                cameraRotation.active = false;
-            });
-        }
-
-        // ОБНОВЛЕНИЕ ИГРЫ
-        function updateGame() {
-            if (!gameActive) return;
-            
-            const carConfig = cars[currentCar];
-            
-            // УПРАВЛЕНИЕ СКОРОСТЬЮ СТРЕЛКАМИ
-            if (controls.forward) {
-                carSpeed = Math.min(carConfig.maxSpeed, carSpeed + carConfig.acceleration * 2);
-            } else if (controls.backward) {
-                carSpeed = Math.max(-carConfig.maxSpeed * 0.5, carSpeed - carConfig.acceleration * 3);
+            // Позиция оружия в руках
+            if (currentWeapon === 'knife') {
+                weaponModel.position.set(0.15, -0.1, -0.2);
+                weaponModel.rotation.x = 0.2;
+                weaponModel.rotation.y = -0.3;
             } else {
-                // Плавное замедление
-                carSpeed *= 0.98;
+                weaponModel.position.set(0.2, -0.15, -0.3);
+                weaponModel.rotation.x = 0.1;
+                weaponModel.rotation.y = -0.1;
             }
-            
-            // ТОРМОЖЕНИЕ
-            if (controls.brake) {
-                carSpeed = Math.max(0, carSpeed - carConfig.acceleration * 4);
-            }
-            
-            // NITRO
-            if (controls.nitro && nitro > 0) {
-                carSpeed = Math.min(carConfig.maxSpeed * 1.3, carSpeed + carConfig.acceleration * 3);
-                nitro = Math.max(0, nitro - 0.8);
-            }
-            
-            // ПОВОРОТЫ СТРЕЛКАМИ
-            if (Math.abs(carSpeed) > 5) {
-                if (controls.left) {
-                    carModel.rotation.y += carConfig.handling * (carSpeed / carConfig.maxSpeed);
-                }
-                if (controls.right) {
-                    carModel.rotation.y -= carConfig.handling * (carSpeed / carConfig.maxSpeed);
-                }
-            }
-            
-            // ДВИЖЕНИЕ МАШИНЫ
-            const direction = new THREE.Vector3(0, 0, -1);
-            direction.applyQuaternion(carModel.quaternion);
-            carModel.position.add(direction.multiplyScalar(carSpeed * 0.02));
-            
-            // ОГРАНИЧЕНИЯ ГРАНИЦ КАРТЫ
-            carModel.position.x = THREE.MathUtils.clamp(carModel.position.x, -MAP_SIZE/2, MAP_SIZE/2);
-            carModel.position.z = THREE.MathUtils.clamp(carModel.position.z, -MAP_SIZE/2, MAP_SIZE/2);
-            
-            // ВОССТАНОВЛЕНИЕ NITRO
-            if (!controls.nitro && nitro < 100) {
-                nitro += 0.1;
-            }
-            
-            // КАМЕРА СЛЕДИТ ЗА МАШИНОЙ (если не вращаем вручную)
-            if (!cameraRotation.active) {
-                const cameraDistance = 25;
-                const cameraHeight = 15;
-                
-                // Плавное следование камеры за машиной
-                const targetCameraPos = new THREE.Vector3(
-                    carModel.position.x,
-                    carModel.position.y + cameraHeight,
-                    carModel.position.z + cameraDistance
-                );
-                
-                camera.position.lerp(targetCameraPos, 0.1);
-                camera.lookAt(carModel.position);
-            }
-            
-            updateOpponents();
-            updateUI();
         }
 
-        function updateOpponents() {
-            opponents.forEach((opponent, index) => {
-                const oppDirection = new THREE.Vector3(0, 0, -1);
-                opponent.model.position.add(oppDirection.multiplyScalar(opponent.speed * 0.02));
-                
-                // Простой ИИ для оппонентов
-                opponent.model.rotation.y += (Math.sin(Date.now() * 0.001 + index) * 0.01);
-                
-                // Возврат на трассу
-                if (opponent.model.position.x < -TRACK_WIDTH/2 || opponent.model.position.x > TRACK_WIDTH/2) {
-                    opponent.model.rotation.y += Math.PI * 0.02;
+        // === СИСТЕМА СТРЕЛЬБЫ ===
+        function shoot() {
+            if (!canShoot || isReloading) return;
+            
+            const weapon = GameConfig.weapons[currentWeapon];
+            
+            if (weapon.isMelee) {
+                // Атака ножом
+                meleeAttack();
+                return;
+            }
+            
+            if (weapon.ammo <= 0) {
+                playEmptyClick();
+                return;
+            }
+            
+            weapon.ammo--;
+            isShooting = true;
+            canShoot = false;
+            
+            console.log("Выстрел! Патронов осталось:", weapon.ammo);
+            
+            animateRecoil();
+            createMuzzleFlash();
+            
+            const hit = checkHit();
+            if (hit) {
+                showHitMarker();
+                console.log("Попадание!");
+                if (hit.object.userData && hit.object.userData.isEnemy) {
+                    damageTarget(hit.object, weapon.damage);
                 }
+            }
+            
+            playShotSound();
+            updateHUD();
+            
+            setTimeout(() => {
+                canShoot = true;
+                isShooting = false;
+            }, 60000 / weapon.fireRate);
+        }
+
+        function meleeAttack() {
+            if (!canShoot) return;
+            
+            const weapon = GameConfig.weapons[currentWeapon];
+            isShooting = true;
+            canShoot = false;
+            
+            console.log("Атака ножом!");
+            
+            // Анимация атаки ножом
+            weaponModel.rotation.x += 0.5;
+            weaponModel.position.z -= 0.1;
+            
+            const crosshair = document.getElementById('crosshair');
+            crosshair.classList.add('knife-attack');
+            
+            // Проверка попадания в ближнем бою
+            const hit = checkMeleeHit();
+            if (hit) {
+                showHitMarker();
+                console.log("Попадание ножом!");
+                if (hit.object.userData && hit.object.userData.isEnemy) {
+                    damageTarget(hit.object, weapon.damage);
+                }
+            }
+            
+            playKnifeSound();
+            
+            setTimeout(() => {
+                weaponModel.rotation.x -= 0.5;
+                weaponModel.position.z += 0.1;
+                crosshair.classList.remove('knife-attack');
+                canShoot = true;
+                isShooting = false;
+            }, 200);
+        }
+
+        function checkMeleeHit() {
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            raycaster.far = 2; // Ближняя дистанция для ножа
+            
+            const intersects = raycaster.intersectObjects(scene.children, true);
+            
+            for (let intersect of intersects) {
+                if (intersect.object.userData && intersect.object.userData.isEnemy) {
+                    return intersect;
+                }
+            }
+            return null;
+        }
+
+        function animateRecoil() {
+            // Отдача оружия
+            weaponModel.position.z -= 0.03;
+            weaponModel.rotation.x += 0.1;
+            
+            const crosshair = document.getElementById('crosshair');
+            crosshair.classList.add('shoot-recoil');
+            
+            setTimeout(() => {
+                weaponModel.position.z += 0.03;
+                weaponModel.rotation.x -= 0.1;
+                crosshair.classList.remove('shoot-recoil');
+            }, 100);
+        }
+
+        function createMuzzleFlash() {
+            if (currentWeapon === 'knife') return;
+            
+            const flashGroup = new THREE.Group();
+            
+            const flashGeometry = new THREE.SphereGeometry(0.03, 8, 8);
+            const flashMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xffff00,
+                transparent: true,
+                opacity: 0.9
+            });
+            const flash = new THREE.Mesh(flashGeometry, flashMaterial);
+            flashGroup.add(flash);
+            
+            // Позиция вспышки на конце ствола
+            flashGroup.position.copy(weaponModel.position);
+            flashGroup.translateX(0.4);
+            
+            scene.add(flashGroup);
+            
+            setTimeout(() => {
+                scene.remove(flashGroup);
+            }, 50);
+        }
+
+        function checkHit() {
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            
+            const intersects = raycaster.intersectObjects(scene.children, true);
+            
+            for (let intersect of intersects) {
+                if (intersect.object.userData && intersect.object.userData.isEnemy) {
+                    return intersect;
+                }
+                // Останавливаемся на первом попавшемся объекте
+                if (!intersect.object.userData || !intersect.object.userData.isTransparent) {
+                    return intersect;
+                }
+            }
+            return null;
+        }
+
+        function showHitMarker() {
+            const hitMarker = document.getElementById('hitMarker');
+            hitMarker.classList.remove('show-hit');
+            void hitMarker.offsetWidth;
+            hitMarker.classList.add('show-hit');
+        }
+
+        function damageTarget(target, damage) {
+            if (!target.userData) return;
+            
+            target.userData.health -= damage;
+            console.log("Враг получил урон:", damage, "Осталось здоровья:", target.userData.health);
+            
+            // Эффект попадания - временное изменение цвета
+            const originalColor = target.material.color.clone();
+            target.material.color.set(0xff4444);
+            
+            setTimeout(() => {
+                if (target.userData.health > 0) {
+                    target.material.color.copy(originalColor);
+                }
+            }, 200);
+            
+            if (target.userData.health <= 0) {
+                destroyEnemy(target);
+            }
+        }
+
+        // === СИСТЕМА ПЕРЕЗАРЯДКИ ===
+        function reloadWeapon() {
+            if (isReloading || currentWeapon === 'knife') return;
+            
+            const weapon = GameConfig.weapons[currentWeapon];
+            if (weapon.ammo === weapon.maxAmmo) return;
+            
+            isReloading = true;
+            canShoot = false;
+            
+            console.log("Начата перезарядка...");
+            document.getElementById('ammoDisplay').textContent = 'RELOADING';
+            document.getElementById('reloadBtn').style.background = 'rgba(255,70,85,0.6)';
+            
+            // Анимация перезарядки оружия
+            const originalRotation = weaponModel.rotation.x;
+            weaponModel.rotation.x = -0.5;
+            
+            setTimeout(() => {
+                weapon.ammo = weapon.maxAmmo;
+                isReloading = false;
+                canShoot = true;
+                weaponModel.rotation.x = originalRotation;
+                updateHUD();
+                document.getElementById('reloadBtn').style.background = '';
+                console.log("Перезарядка завершена");
+            }, weapon.reloadTime * 1000);
+        }
+
+        // === СИСТЕМА УПРАВЛЕНИЯ ===
+        function initControls() {
+            console.log("Инициализация управления...");
+            
+            // Джойстик движения
+            const moveJoystick = document.getElementById('moveJoystick');
+            const moveHandle = document.getElementById('moveHandle');
+            
+            moveJoystick.addEventListener('touchstart', handleMoveStart);
+            document.addEventListener('touchmove', handleMoveMove);
+            document.addEventListener('touchend', handleMoveEnd);
+            
+            // Управление камерой пальцем
+            document.addEventListener('touchstart', handleCameraStart);
+            document.addEventListener('touchmove', handleCameraMove);
+            document.addEventListener('touchend', handleCameraEnd);
+            
+            // Кнопки действий
+            document.getElementById('shootBtn').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                console.log("Кнопка огня нажата");
+                shoot();
+            });
+            
+            document.getElementById('reloadBtn').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                console.log("Кнопка перезарядки нажата");
+                reloadWeapon();
+            });
+            
+            document.getElementById('jumpBtn').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                console.log("Кнопка прыжка нажата");
+                jump();
+            });
+            
+            // Колесо оружия
+            const weaponBtn = document.getElementById('weaponBtn');
+            const weaponWheel = document.getElementById('weaponWheel');
+            
+            weaponBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                weaponWheel.style.display = 'block';
+                console.log("Колесо оружия открыто");
+            });
+            
+            document.addEventListener('touchend', (e) => {
+                if (!e.target.closest('#weaponWheel') && weaponWheel.style.display === 'block') {
+                    weaponWheel.style.display = 'none';
+                }
+            });
+            
+            document.querySelectorAll('.weapon-option').forEach(option => {
+                option.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const weaponType = option.dataset.weapon;
+                    switchWeapon(weaponType);
+                    weaponWheel.style.display = 'none';
+                    console.log("Оружие изменено на:", weaponType);
+                });
+            });
+            
+            console.log("Управление инициализировано");
+        }
+
+        function handleMoveStart(e) {
+            e.preventDefault();
+            const rect = e.currentTarget.getBoundingClientRect();
+            moveJoystickStart.x = rect.left + rect.width / 2;
+            moveJoystickStart.y = rect.top + rect.height / 2;
+            moveJoystickActive = true;
+        }
+
+        function handleMoveMove(e) {
+            if (!moveJoystickActive) return;
+            
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - moveJoystickStart.x;
+            const deltaY = touch.clientY - moveJoystickStart.y;
+            
+            const distance = Math.min(Math.sqrt(deltaX * deltaX + deltaY * deltaY), 50);
+            const angle = Math.atan2(deltaY, deltaX);
+            
+            moveInput.x = Math.cos(angle) * (distance / 50);
+            moveInput.y = -Math.sin(angle) * (distance / 50);
+            
+            document.getElementById('moveHandle').style.transform = 
+                `translate(-50%, -50%) translate(${deltaX * 0.7}px, ${deltaY * 0.7}px)`;
+        }
+
+        function handleMoveEnd(e) {
+            moveJoystickActive = false;
+            moveInput.x = 0;
+            moveInput.y = 0;
+            document.getElementById('moveHandle').style.transform = 'translate(-50%, -50%)';
+        }
+
+        function handleCameraStart(e) {
+            // Игнорируем касания на элементах управления
+            if (e.target.closest('#leftControls') || e.target.closest('#rightControls') || 
+                e.target.closest('#weaponWheel') || e.target.closest('#topPanel')) {
+                return;
+            }
+            
+            // Используем первое касание для управления камерой
+            if (!cameraTouchId && e.touches.length === 1) {
+                cameraTouchId = e.touches[0].identifier;
+                lookTouchActive = true;
+                lookTouchStart.x = e.touches[0].clientX;
+                lookTouchStart.y = e.touches[0].clientY;
+                e.preventDefault();
+            }
+        }
+
+        function handleCameraMove(e) {
+            if (!lookTouchActive) return;
+            
+            // Находим касание для управления камерой
+            let cameraTouch = null;
+            for (let touch of e.touches) {
+                if (touch.identifier === cameraTouchId) {
+                    cameraTouch = touch;
+                    break;
+                }
+            }
+            
+            if (!cameraTouch) return;
+            
+            const deltaX = cameraTouch.clientX - lookTouchStart.x;
+            const deltaY = cameraTouch.clientY - lookTouchStart.y;
+            
+            // Более плавное управление камерой
+            lookInput.x = deltaX * GameConfig.controls.sensitivity * 0.5;
+            lookInput.y = deltaY * GameConfig.controls.sensitivity * 0.5;
+            
+            lookTouchStart.x = cameraTouch.clientX;
+            lookTouchStart.y = cameraTouch.clientY;
+            
+            e.preventDefault();
+        }
+
+        function handleCameraEnd(e) {
+            for (let touch of e.changedTouches) {
+                if (touch.identifier === cameraTouchId) {
+                    lookTouchActive = false;
+                    cameraTouchId = null;
+                    lookInput.x = 0;
+                    lookInput.y = 0;
+                    break;
+                }
+            }
+        }
+
+        // === СИСТЕМА ПЕРСОНАЖА ===
+        function updatePlayer() {
+            // Движение
+            const forward = new THREE.Vector3();
+            camera.getWorldDirection(forward);
+            forward.y = 0;
+            forward.normalize();
+            
+            const right = new THREE.Vector3();
+            right.crossVectors(forward, new THREE.Vector3(0, 1, 0));
+            
+            const moveVector = new THREE.Vector3();
+            moveVector.addScaledVector(forward, moveInput.y * GameConfig.controls.maxMoveSpeed);
+            moveVector.addScaledVector(right, moveInput.x * GameConfig.controls.maxMoveSpeed);
+            
+            camera.position.add(moveVector);
+            
+            // Вращение камеры
+            camera.rotation.y -= lookInput.x;
+            camera.rotation.x -= lookInput.y;
+            camera.rotation.x = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, camera.rotation.x));
+            
+            // Сброс ввода взгляда
+            lookInput.x = 0;
+            lookInput.y = 0;
+            
+            // Физика
+            if (!isGrounded) {
+                playerVelocity.y += GameConfig.world.gravity;
+                camera.position.y += playerVelocity.y;
                 
-                // Ограничение границ
-                opponent.model.position.x = THREE.MathUtils.clamp(opponent.model.position.x, -MAP_SIZE/2, MAP_SIZE/2);
-                opponent.model.position.z = THREE.MathUtils.clamp(opponent.model.position.z, -MAP_SIZE/2, MAP_SIZE/2);
+                if (camera.position.y <= GameConfig.world.playerHeight) {
+                    camera.position.y = GameConfig.world.playerHeight;
+                    playerVelocity.y = 0;
+                    isGrounded = true;
+                }
+            }
+            
+            // Обновление оружия
+            updateWeaponPosition();
+        }
+
+        function updateWeaponPosition() {
+            if (!weaponModel) return;
+            
+            // Оружие следует за камерой с небольшим отставанием для плавности
+            weaponModel.position.lerp(camera.position, 0.3);
+            weaponModel.rotation.x = THREE.MathUtils.lerp(weaponModel.rotation.x, camera.rotation.x + 0.1, 0.3);
+            weaponModel.rotation.y = THREE.MathUtils.lerp(weaponModel.rotation.y, camera.rotation.y - 0.1, 0.3);
+            weaponModel.rotation.z = THREE.MathUtils.lerp(weaponModel.rotation.z, camera.rotation.z, 0.3);
+            
+            // Смещение оружия в руках
+            let weaponOffset;
+            if (currentWeapon === 'knife') {
+                weaponOffset = new THREE.Vector3(0.15, -0.1, -0.2);
+            } else {
+                weaponOffset = new THREE.Vector3(0.2, -0.15, -0.3);
+            }
+            
+            weaponModel.translateX(weaponOffset.x);
+            weaponModel.translateY(weaponOffset.y);
+            weaponModel.translateZ(weaponOffset.z);
+            
+            // Легкая анимация оружия при движении
+            if (moveInput.x !== 0 || moveInput.y !== 0) {
+                weaponModel.rotation.z += Math.sin(Date.now() * 0.01) * 0.02;
+            }
+        }
+
+        function jump() {
+            if (isGrounded) {
+                playerVelocity.y = GameConfig.controls.jumpForce;
+                isGrounded = false;
+                console.log("Прыжок!");
+            }
+        }
+
+        // === СИСТЕМА ВРАГОВ ===
+        function createEnemies() {
+            // Создаем снеговиков-врагов
+            for (let i = 0; i < 6; i++) {
+                createSnowmanEnemy(
+                    (Math.random() - 0.5) * 40,
+                    0,
+                    -10 - Math.random() * 30
+                );
+            }
+            
+            console.log("Враги созданы");
+        }
+
+        function createSnowmanEnemy(x, y, z) {
+            const enemyGroup = new THREE.Group();
+            
+            // Нижний шар
+            const bottomGeometry = new THREE.SphereGeometry(0.8, 16, 16);
+            const bottomMaterial = new THREE.MeshLambertMaterial({ color: 0xff6b6b });
+            const bottom = new THREE.Mesh(bottomGeometry, bottomMaterial);
+            bottom.position.y = 0.8;
+            bottom.castShadow = true;
+            enemyGroup.add(bottom);
+            
+            // Средний шар
+            const middleGeometry = new THREE.SphereGeometry(0.6, 16, 16);
+            const middle = new THREE.Mesh(middleGeometry, bottomMaterial);
+            middle.position.y = 1.8;
+            middle.castShadow = true;
+            enemyGroup.add(middle);
+            
+            // Голова
+            const headGeometry = new THREE.SphereGeometry(0.4, 16, 16);
+            const head = new THREE.Mesh(headGeometry, bottomMaterial);
+            head.position.y = 2.6;
+            head.castShadow = true;
+            enemyGroup.add(head);
+            
+            // Злые глаза
+            const eyeGeometry = new THREE.SphereGeometry(0.06, 8, 8);
+            const eyeMaterial = new THREE.MeshLambertMaterial({ color: 0x000000 });
+            const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            leftEye.position.set(-0.12, 2.6, 0.35);
+            rightEye.position.set(0.12, 2.6, 0.35);
+            enemyGroup.add(leftEye);
+            enemyGroup.add(rightEye);
+            
+            // Злой рот
+            const mouthGeometry = new THREE.BoxGeometry(0.2, 0.05, 0.05);
+            const mouthMaterial = new THREE.MeshLambertMaterial({ color: 0x000000 });
+            const mouth = new THREE.Mesh(mouthGeometry, mouthMaterial);
+            mouth.position.set(0, 2.45, 0.35);
+            enemyGroup.add(mouth);
+            
+            enemyGroup.position.set(x, y, z);
+            
+            // Данные врага
+            enemyGroup.userData = {
+                isEnemy: true,
+                health: 100,
+                maxHealth: 100,
+                isAlive: true,
+                speed: 0.02 + Math.random() * 0.01
+            };
+            
+            scene.add(enemyGroup);
+            enemies.push(enemyGroup);
+            
+            return enemyGroup;
+        }
+
+        function updateEnemies() {
+            enemies.forEach(enemy => {
+                if (!enemy.userData.isAlive) return;
+                
+                // Враг следует за игроком
+                const direction = new THREE.Vector3();
+                direction.subVectors(camera.position, enemy.position);
+                direction.y = 0;
+                direction.normalize();
+                
+                // Движение к игроку
+                enemy.position.add(direction.multiplyScalar(enemy.userData.speed));
+                
+                // Поворот в сторону игрока
+                const targetRotation = Math.atan2(direction.x, direction.z);
+                enemy.rotation.y = THREE.MathUtils.lerp(enemy.rotation.y, targetRotation, 0.05);
+                
+                // Легкое покачивание для анимации
+                enemy.rotation.z = Math.sin(Date.now() * 0.003) * 0.1;
+                
+                // Проверка расстояния для атаки
+                const distanceToPlayer = enemy.position.distanceTo(camera.position);
+                if (distanceToPlayer < 3) {
+                    // Враг атакует!
+                    if (Math.random() < 0.01) {
+                        damagePlayer(10);
+                    }
+                }
             });
         }
 
-        function updateUI() {
-            document.getElementById('speed').textContent = Math.round(Math.abs(carSpeed));
-            document.getElementById('lap').textContent = `${currentLap}/${totalLaps}`;
-            document.getElementById('position').textContent = `${playerPosition}-е место`;
-            document.getElementById('carName').textContent = cars[currentCar].name;
-            document.getElementById('carNitro').textContent = `💨 ${Math.round(nitro)}%`;
-        }
-
-        // АНИМАЦИЯ
-        function animate() {
-            if (!gameActive) return;
+        function destroyEnemy(enemy) {
+            enemy.userData.isAlive = false;
             
-            requestAnimationFrame(animate);
-            updateGame();
-            renderer.render(scene, camera);
+            // Эффект разрушения
+            enemy.rotation.x = Math.PI / 2;
+            enemy.position.y = -1;
+            
+            // Изменение цвета на серый
+            enemy.traverse(child => {
+                if (child.isMesh) {
+                    child.material.color.set(0x888888);
+                }
+            });
+            
+            console.log("Враг уничтожен!");
+            
+            setTimeout(() => {
+                if (enemy.parent) {
+                    scene.remove(enemy);
+                }
+                const index = enemies.indexOf(enemy);
+                if (index > -1) {
+                    enemies.splice(index, 1);
+                }
+                
+                // Создаем нового врага через некоторое время
+                setTimeout(() => {
+                    createSnowmanEnemy(
+                        (Math.random() - 0.5) * 40,
+                        0,
+                        -10 - Math.random() * 30
+                    );
+                }, 5000);
+            }, 2000);
         }
 
-        // ЗАПУСК
-        window.addEventListener('load
+        // === СИСТЕМА ЗДОРОВЬЯ ===
+        function damagePlayer(amount) {
+            playerHealth = Math.max(0, playerHealth - amount);
+            
+            // Эффект получения урона
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(255, 0, 0, 0.3);
+                pointer-events: none;
+                z-index: 1000;
+            `;
+            document.body.appendChild(overlay);
+            
+            setTimeout(() => {
+                if (overlay.parentNode) {
+                    document.body.removeChild(overlay);
+                }
+            }, 300);
+            
+            console.log("Игрок получил урон! Здоровье:", playerHealth);
+            
+            if (playerHealth <= 0) {
+                gameOver();
+            }
+        }
+
+        function gameOver() {
+            const gameOverScreen = document.createElement('div');
+            gameOverScreen.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                color: white;
+                font-family: Arial, sans-serif;
+                z-index: 10000;
+            `;
+            gameOverScreen.innerHTML = `
+                <h1 style="font-size: 48px; color: #ff4655; margin-bottom: 20px;">GAME OVER</h1>
+                <p style="font-size: 24px; margin-bottom: 30px;">Health: 0/100</p>
+                <button onclick="location.reload()" style="
+                    padding: 15px 30px;
+                    font-size: 20px;
+                    background: #ff4655;
+                    border: none;
+                    border-radius: 10px;
+                    color: white;
+                    cursor: pointer;
+                ">RESTART</button>
+            `;
+            document.body.appendChild(gameOverScreen);
+        }
+
+        // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
+        function switchWeapon(weaponType) {
+            if (currentWeapon === weaponType || isReloading) return;
+            
+            currentWeapon = weaponType;
+            updateWeaponModel();
+            updateHUD();
+        }
+
+        function updateHUD() {
+            const weapon = GameConfig.weapons[currentWeapon];
+            document.getElementById('weaponName').textContent = currentWeapon.toUpperCase();
+            
+            if (weapon.isMelee) {
+                document.getElementById('ammoDisplay').textContent = 'MELEE';
+            } else {
+                document.getElementById('ammoDisplay').textContent = `${weapon.ammo}/${weapon.maxAmmo}`;
+            }
+        }
+
+        function playShotSound() {
+            // Заглушка для звука
+        }
+
+        function playKnifeSound() {
+            // Заглушка для звука ножа
+            console.log("*swish* - атака ножом!");
+        }
+
+        function playEmptyClick() {
+            console.log("*click* - нет патронов!");
+        }
+
+        // === ИГРОВОЙ ЦИКЛ ===
+        function gameLoop() {
+            updatePlayer();
+            updateEnemies();
+            updateSnowfall();
+            renderer.render(scene, camera);
+            requestAnimationFrame(gameLoop);
+        }
+
+        // === ИНИЦИАЛИЗАЦИЯ ИГРЫ ===
+        function initGame() {
+            console.log("Запуск игры...");
+            try {
+                initThreeJS();
+                initControls();
+                updateHUD();
+                gameLoop();
+                console.log("Игра успешно запущена!");
+            } catch (error) {
+                console.error("Ошибка при запуске игры:", error);
+            }
+        }
+
+        // ЗАПУСК ИГРЫ
+        window.addEventListener('load', initGame);
+        
+        // Обработка изменения размера окна
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
